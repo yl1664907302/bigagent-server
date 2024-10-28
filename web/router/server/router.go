@@ -11,4 +11,5 @@ func (*ServerRouter) Router(r *gin.Engine) {
 	g := r.Group("/v1")
 	ServerApi := api.ApiGroupApp.ServerApiGroup
 	g.GET("/agent_id", ServerApi.SearchAgent)
+	g.POST("/push", ServerApi.PushAgentData)
 }

@@ -1,17 +1,12 @@
 package crontab
 
 import (
-	"bigagent/scrape/machine"
-	"bigagent/util/logger"
+	"bigagent_server/utils/logger"
 	"github.com/robfig/cron/v3"
 )
 
 // CronTask Crontab执行的任务列表
 func cronTask() {
-	//开始采集
-	machine.Ma = machine.NewMachine()
-	//更新通知
-	machine.NotifyMachineAddressChange()
 }
 
 // ScrapeCrontab 初始化采集crontab任务
