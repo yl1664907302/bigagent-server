@@ -1,0 +1,205 @@
+syntax = "proto3";
+
+package grpc_server;
+
+
+//info
+message TimesStat {
+  string cpu = 1;
+  double user = 2;
+  double system = 3;
+  double idle = 4;
+  double nice = 5;
+  double iowait = 6;
+  double irq = 7;
+  double softirq = 8;
+  double steal = 9;
+  double guest = 10;
+  double guestNice = 11;
+}
+
+message InfoStat {
+  int32 cpu = 1;
+  string vendorId = 2;
+  string family = 3;
+  string model = 4;
+  int32 stepping = 5;
+  string physicalId = 6;
+  string coreId = 7;
+  int32 cores = 8;
+  string modelName = 9;
+  double mhz = 10;
+  int32 cacheSize = 11;
+  repeated string flags = 12;
+  string microcode = 13;
+}
+
+message Cpus {
+  repeated InfoStat cpu_info = 1;
+  repeated TimesStat cpu_times = 2;
+}
+
+message Info {
+  string uuid = 1;
+  string hostname = 2;
+  string ipv4 = 3;
+  uint64 time = 4;
+}
+
+
+//磁盘
+message UsageStat {
+  string path = 1;
+  string fstype = 2;
+  uint64 total = 3;
+  uint64 free = 4;
+  uint64 used = 5;
+  double usedPercent = 6;
+  uint64 inodesTotal = 7;
+  uint64 inodesUsed = 8;
+  uint64 inodesFree = 9;
+  double inodesUsedPercent = 10;
+}
+
+message PartitionStat {
+  string device = 1;
+  string mountpoint = 2;
+  string fstype = 3;
+  repeated string opts = 4; // 表示字符串数组
+}
+
+message IOCountersStat {
+  uint64 readCount = 1;
+  uint64 mergedReadCount = 2;
+  uint64 writeCount = 3;
+  uint64 mergedWriteCount = 4;
+  uint64 readBytes = 5;
+  uint64 writeBytes = 6;
+  uint64 readTime = 7;
+  uint64 writeTime = 8;
+  uint64 iopsInProgress = 9;
+  uint64 ioTime = 10;
+  uint64 weightedIO = 11;
+  string name = 12;
+  string serialNumber = 13;
+  string label = 14;
+}
+
+message Disk {
+  UsageStat U = 1;  // "U" field
+  repeated PartitionStat p = 2;  // "P" field
+  // 使用 repeated 表示键值对的映射，通过传递键值对列表模拟 map
+  map<string,IOCountersStat>  IO = 3;  // "IO" field
+}
+
+
+//内存
+
+message VirtualMemoryStat {
+  // Total amount of RAM on this system
+  uint64 total = 1;
+
+  // RAM available for programs to allocate
+  uint64 available = 2;
+
+  // RAM used by programs
+  uint64 used = 3;
+
+  // Percentage of RAM used by programs
+  double used_percent = 4;
+
+  // Kernel's notion of free memory
+  uint64 free = 5;
+
+  // OS X / BSD specific numbers
+  uint64 active = 6;
+  uint64 inactive = 7;
+  uint64 wired = 8;
+
+  // FreeBSD specific numbers
+  uint64 laundry = 9;
+
+  // Linux specific numbers
+  uint64 buffers = 10;
+  uint64 cached = 11;
+  uint64 write_back = 12;
+  uint64 dirty = 13;
+  uint64 write_back_tmp = 14;
+  uint64 shared = 15;
+  uint64 slab = 16;
+  uint64 sreclaimable = 17;
+  uint64 sunreclaim = 18;
+  uint64 page_tables = 19;
+  uint64 swap_cached = 20;
+  uint64 commit_limit = 21;
+  uint64 committed_as = 22;
+  uint64 high_total = 23;
+  uint64 high_free = 24;
+  uint64 low_total = 25;
+  uint64 low_free = 26;
+  uint64 swap_total = 27;
+  uint64 swap_free = 28;
+  uint64 mapped = 29;
+  uint64 vmalloc_total = 30;
+  uint64 vmalloc_used = 31;
+  uint64 vmalloc_chunk = 32;
+  uint64 huge_pages_total = 33;
+  uint64 huge_pages_free = 34;
+  uint64 huge_pages_rsvd = 35;
+  uint64 huge_pages_surp = 36;
+  uint64 huge_page_size = 37;
+  uint64 anon_huge_pages = 38;
+}
+
+message SwapMemoryStat {
+  uint64 total = 1;        // Total swap memory
+  uint64 used = 2;         // Used swap memory
+  uint64 free = 3;         // Free swap memory
+  double used_percent = 4; // Percentage of swap memory used
+  uint64 sin = 5;          // Swap-in bytes
+  uint64 sout = 6;         // Swap-out bytes
+  uint64 pg_in = 7;        // Pages swapped in
+  uint64 pg_out = 8;       // Pages swapped out
+  uint64 pg_fault = 9;     // Page faults
+
+  // Linux specific numbers
+  uint64 pg_maj_fault = 10; // Major page faults
+}
+
+message SwapDevice {
+  string name = 1;        // Name of the swap device
+  uint64 used_bytes = 2;  // Bytes used on the swap device
+  uint64 free_bytes = 3;  // Bytes free on the swap device
+}
+
+
+message Memory {
+  VirtualMemoryStat virtual_memory = 1; // Virtual memory statistics
+  SwapMemoryStat swap_memory = 2;       // Swap memory statistics
+  repeated SwapDevice swap_devices = 3; // List of swap devices
+}
+
+
+// 定义 StandData 数据结构
+message StandData {
+  string serct=1;
+  string uuid = 2;
+  string hostname = 3;
+  string ipv4 = 4;
+  uint64 time = 5;
+  Info info = 6;
+  Cpus cpu = 7;
+  Disk disk = 8;
+  Memory memory = 9;
+  repeated string net = 10;
+}
+
+// 定义服务接口
+service PushAgantData {
+  rpc SendData (StandData) returns (ResponseMessage);
+}
+
+message ResponseMessage {
+  string code =1;
+  string message = 2;
+}

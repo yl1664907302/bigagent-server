@@ -7,6 +7,7 @@ import (
 
 func init() {
 	inits.Viper()
+	inits.RunG()
 	r := inits.Router()
 	panic(r.Run(global.CONF.System.Addr))
 }
