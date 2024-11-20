@@ -3,7 +3,6 @@ package grpc_server
 import (
 	"context"
 	"fmt"
-	"log"
 )
 
 type GrpcServer struct {
@@ -17,10 +16,11 @@ func (s GrpcServer) SendData(ctx context.Context, req *StandData) (*ResponseMess
 			fmt.Println(panicInfo)
 		}
 	}()
+
 	message := ResponseMessage{
 		Code:    "200",
 		Message: "成功",
 	}
-	log.Println(req)
+
 	return &message, nil
 }

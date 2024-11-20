@@ -33,7 +33,7 @@ func InitLogger(logFile, logLevel, logFormat string, openConsole bool) {
 	}
 
 	//设定输出日志中是否要携带上文件名与行号
-	DefaultLogger.SetReportCaller(false)
+	DefaultLogger.SetReportCaller(true)
 
 	//设定日志等级
 	setLogLevel(DefaultLogger, logLevel)
