@@ -8,9 +8,11 @@ import (
 func init() {
 	inits.Viper()
 	inits.Logger()
+	inits.MysqlDB()
 	inits.RunG()
 	r := inits.Router()
 	panic(r.Run(global.CONF.System.Addr))
 }
 
-func main() {}
+func main() {
+}
