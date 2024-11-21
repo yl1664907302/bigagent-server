@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-var (
-	client grpc_server.PushAgantDataClient
-)
-
 // InitClient 通用grpc客户端
 func InitClient(host string) (*grpc.ClientConn, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond) //连接超时设置为1000毫秒
@@ -33,7 +29,7 @@ func InitClient(host string) (*grpc.ClientConn, error) {
 
 // GrpcStandPush 执行GRPC标准数据类型推送方法
 func GrpcStandPush(conn *grpc.ClientConn) {
-	client = grpc_server.NewPushAgantDataClient(conn)
+	client := grpc_server.NewPushAgantDataClient(conn)
 	//准备好请求参数
 	//...
 	//发送请求，取得响应

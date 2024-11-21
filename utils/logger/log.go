@@ -2,10 +2,12 @@ package logger
 
 import (
 	"fmt"
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"path"
+	"time"
 )
 
 var DefaultLogger = logrus.New()
@@ -98,5 +100,59 @@ func setLogFormat(format string) {
 				TimestampFormat: "2006-01-02 15:04:05.000 -0700 MST",
 			},
 		)
+	}
+}
+
+// 自定义 Gin 日志中间件
+func GinLoggerMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		startTime := time.Now()
+
+		// 处理请求
+		c.Next()
+
+		// 记录请求日志
+		endTime := time.Now()
+		latency := endTime.Sub(startTime)
+		statusCode := c.Writer.Status()
+		clientIP := c.ClientIP()
+		method := c.Request.Method
+		path := c.Request.URL.Path
+		userAgent := c.Request.UserAgent()
+		errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
+
+		// 使用 logrus 记录
+		DefaultLogger.WithFields(map[string]interface{}{
+			"timestamp":     endTime.Format("2006-01-02 15:04:05"),
+			"status_code":   statusCode,
+			"latency":       latency,
+			"client_ip":     clientIP,
+			"method":        method,
+			"path":          path,
+			"user_agent":    userAgent,
+			"error_message": errorMessage,
+		}).Info("request log")
+	}
+}
+
+// 自定义 Gin Recovery 中间件
+func GinRecoveryMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		defer func() {
+			if err := recover(); err != nil {
+				DefaultLogger.WithFields(map[string]interface{}{
+					"timestamp": time.Now().Format("2006-01-02 15:04:05"),
+					"error":     err,
+					"path":      c.Request.URL.Path,
+					"method":    c.Request.Method,
+				}).Error("panic recovered")
+
+				// 返回 500 错误
+				c.AbortWithStatusJSON(500, gin.H{
+					"message": "Internal Server Error",
+				})
+			}
+		}()
+		c.Next()
 	}
 }
