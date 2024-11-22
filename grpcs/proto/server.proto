@@ -192,7 +192,10 @@ message StandData {
   Disk disk = 8;
   Memory memory = 9;
   repeated string net = 10;
+  string status = 11;
+  string actionDetail =12;
 }
+
 
 // 定义服务接口
 service PushAgantData {
@@ -203,3 +206,5 @@ message ResponseMessage {
   string code =1;
   string message = 2;
 }
+
+//protoc --gogofaster_out=plugins=grpc:./grpcs/server/ --proto_path=./grpcs/proto/ server.proto

@@ -6,15 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
+	"time"
 )
 
-//func LoginUser(username string, password string) (pojo.User, error) {
-//	var user pojo.User
-//	//err := global.MysqlDataConnect.Select("username,password").Find(&p).Error
-//	err := global.MysqlDataConnect.Where("username = ? AND password = ?", username, password).First(&user).Error
-//	log.Println(user)
-//	return user, err
-//}
+func AgentUpdateActiveToDead(t time.Time) ([]model.AgentInfo, error) {
+	var agents []model.AgentInfo
+	global.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Find(&agents)
+	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).
+		Where("updated_at < ?", t).
+		Update("active", 0).Error
+	return agents, err
+}
 
 func AgentRegister(a *model.AgentInfo) error {
 	err := global.MysqlDataConnect.Create(&a).Error
@@ -22,10 +24,9 @@ func AgentRegister(a *model.AgentInfo) error {
 }
 
 func AgentUpdateAllExceptUUID(uuid string, a *model.AgentInfo) error {
-	// 使用 Omit 排除 uuid 字段
 	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).
 		Where("uuid = ?", uuid).
-		Omit("uuid").
+		Omit("uuid").Omit("created_at").
 		Updates(a).Error
 	return err
 }

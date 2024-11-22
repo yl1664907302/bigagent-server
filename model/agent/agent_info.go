@@ -16,7 +16,7 @@ type AgentInfo struct {
 	UpdatedAt    time.Time `gorm:"column:updated_at;type:timestamp;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"` // 更新时间
 }
 
-// TableName 指定表名
+// TableName 指定表名，gorm默认使用model方法传入查询表的元信息，并使用"Tabler"接口获取表名
 func (a *AgentInfo) TableName() string {
 	return "agent_info"
 }

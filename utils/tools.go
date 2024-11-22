@@ -1,7 +1,10 @@
 package utils
 
 import (
+	"context"
 	"fmt"
+	"google.golang.org/grpc/peer"
+	"net"
 	"net/url"
 	"reflect"
 	"strings"
@@ -105,4 +108,18 @@ func JSONToFormData(jsonData interface{}) (string, error) {
 
 	// 编码为表单格式
 	return formData.Encode(), nil
+}
+
+func GetIPToCtx(c context.Context) (string, error) {
+	// 获取客户端的 IP 地址
+	p, ok := peer.FromContext(c)
+	// 提取 IP 部分（去掉端口）
+	host, _, err := net.SplitHostPort(p.Addr.String())
+	if err != nil {
+		return "", err
+	}
+	if !ok {
+		return "", err
+	}
+	return host, nil
 }
