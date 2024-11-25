@@ -9,15 +9,37 @@ import (
 	"time"
 )
 
-func AgentUpdateActiveToDead(t time.Time) ([]model.AgentInfo, error) {
+func AgentNetIPSelectByUuid(uuid string) (string, error) {
+	var agent model.AgentInfo
+	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).Select("net_ip").Where("uuid = ?", uuid).First(&agent).Error
+	if err != nil {
+		return "", err
+	}
+	return agent.NetIP, nil
+}
+
+func FindDeadAgents(t time.Time) ([]model.AgentInfo, error) {
 	var agents []model.AgentInfo
-	global.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Find(&agents)
-	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).
-		Where("updated_at < ?", t).
-		Update("active", 0).Error
+	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Find(&agents).Error
 	return agents, err
 }
 
+func UpdateDeadAgents(t time.Time) error {
+	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Omit("updated_at").Update("active", 0).Error
+	return err
+}
+
+func AgentUpdateActiveToDead(t time.Time) ([]model.AgentInfo, error) {
+	agents, err := FindDeadAgents(t)
+	if err != nil {
+		return nil, err
+	}
+	err = UpdateDeadAgents(t)
+	if err != nil {
+		return nil, err
+	}
+	return agents, nil
+}
 func AgentRegister(a *model.AgentInfo) error {
 	err := global.MysqlDataConnect.Create(&a).Error
 	return err

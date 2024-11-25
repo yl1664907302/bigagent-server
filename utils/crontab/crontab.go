@@ -8,7 +8,7 @@ import (
 )
 
 // CronTask Crontab执行的任务列表
-func cronTask() {
+func CronTask() {
 	checkAgentStatus()
 }
 
@@ -16,21 +16,21 @@ func cronTask() {
 func ScrapeCrontab() {
 	crontabRule := "@every 5s"
 	c := cron.New()
-	c.Start()
 
-	addFunc, err := c.AddFunc(crontabRule, cronTask)
+	addFunc, err := c.AddFunc(crontabRule, CronTask)
 	if err != nil {
 		logger.DefaultLogger.Error("定时任务启动异常：", err)
 		return
 	}
+	c.Start()
 	logger.DefaultLogger.Info("定时任务启动成功,EntryID：", addFunc)
 }
 
 func checkAgentStatus() {
 	// 当前时间
 	now := time.Now()
-	// 超时时间阈值，例如 3 秒未通信
-	timeout := now.Add(-5 * time.Second)
+	// 超时时间阈值，例如 15 秒未通信
+	timeout := now.Add(-10 * time.Second)
 	// 更新掉线的 Agent
 	dagents, err := mysqldb.AgentUpdateActiveToDead(timeout)
 	if err != nil {

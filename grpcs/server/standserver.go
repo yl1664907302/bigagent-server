@@ -49,7 +49,6 @@ func (s GrpcServer) SendData(ctx context.Context, req *StandData) (*ResponseMess
 			CreatedAt:    time.Time{},
 			UpdatedAt:    time.Time{},
 		})
-		logger.DefaultLogger.Error(err)
 		return &ResponseMessage{
 			Code:    "200",
 			Message: "agent register success ！",
@@ -66,7 +65,6 @@ func (s GrpcServer) SendData(ctx context.Context, req *StandData) (*ResponseMess
 			ActionDetail: req.ActionDetail,
 			UpdatedAt:    time.Time{},
 		})
-		logger.DefaultLogger.Error(err)
 	}
 	logger.DefaultLogger.Info("ip地址为：", host)
 	return &ResponseMessage{

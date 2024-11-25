@@ -3,6 +3,7 @@ system:
   grpc: "192.168.0.83:5678"
   logfile: "log.txt"
   serct: "123456"
+  client_port: "8010"
   database:
     mysqlhost: "localhost"
     mysqlport: "3306"
