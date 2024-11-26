@@ -3,11 +3,10 @@ package server
 import (
 	"bigagent_server/config/global"
 	"bigagent_server/db/mysqldb"
-	model "bigagent_server/model/agentstanddata"
 	"bigagent_server/utils/logger"
 	responses "bigagent_server/web/response"
 	"github.com/gin-gonic/gin"
-	"github.com/goccy/go-json"
+	"io"
 	"io/ioutil"
 	"net/http"
 )
@@ -48,7 +47,12 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 		return
 	}
 
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+		}
+	}(resp.Body)
 
 	// 将响应体内容返回给客户端
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
@@ -61,17 +65,14 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 		}
 	}
 
-	c.Writer.Write(bodyBytes)
-
-}
-
-func (*ServerApi) PushAgentData(c *gin.Context) {
-	standard := model.NewAgentStandData()
-	body, err := c.GetRawData()
+	_, err = c.Writer.Write(bodyBytes)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
-	err = json.Unmarshal(body, &standard)
+}
+
+func (*ServerApi) PushAgentData(c *gin.Context) {
+
 	//  匹配密钥并权鉴,
 	//  送入指定model构造器，构造数据类型
 	//	...
