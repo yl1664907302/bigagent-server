@@ -3,9 +3,12 @@ package server
 import (
 	"bigagent_server/config/global"
 	"bigagent_server/db/mysqldb"
+	"bigagent_server/model"
 	"bigagent_server/utils/logger"
 	responses "bigagent_server/web/response"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/goccy/go-json"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -25,6 +28,7 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 	// 创建一个新的请求对象，复制原始请求信息
 	req, err := http.NewRequest(c.Request.Method, "http://"+ip+":"+global.CONF.System.Client_port+"/bigagent/showdata", c.Request.Body)
 	if err != nil {
+		logger.DefaultLogger.Error(err)
 		responses.FailWithAgent(c, "查询失败！", err)
 		return
 	}
@@ -43,6 +47,7 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 	resp, err := client.Do(req)
 
 	if err != nil {
+		logger.DefaultLogger.Error(err)
 		responses.FailWithAgent(c, "查询失败！", err)
 		return
 	}
@@ -71,8 +76,27 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 	}
 }
 
-func (*ServerApi) PushAgentData(c *gin.Context) {
-
+func (*ServerApi) PushAgentConfig(c *gin.Context) {
+	if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
+		logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
+		responses.FailWithAgent(c, "配置秘钥认证失败！", nil)
+		return
+	}
+	body, err := c.GetRawData()
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+	}
+	config := new(model.AgentConfig)
+	err = json.Unmarshal(body, config)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+	}
+	err = config.UnmarshalAuthDetails(body)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+	}
+	jsonData, err := json.MarshalIndent(config, "", "  ")
+	fmt.Println(string(jsonData))
 	//  匹配密钥并权鉴,
 	//  送入指定model构造器，构造数据类型
 	//	...
