@@ -1,9 +1,9 @@
 system:
   addr: ":8080"
-  grpc: "0.0.0.0:5678"
+  grpc: "0.0.0.0:8765"
   logfile: "log.txt"
   serct: "123456"
-  client_port: "8010"
+  client_port: "0.0.0.0:5678"
   database:
     mysqlhost: "localhost"
     mysqlport: "3306"

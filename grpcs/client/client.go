@@ -1,7 +1,10 @@
 package grpc_client
 
 import (
-	grpc_server "bigagent_server/grpcs/server"
+	"bigagent_server/grpcs/grpc_config"
+	"bigagent_server/grpcs/server"
+	"bigagent_server/model"
+	"bigagent_server/utils/logger"
 	"context"
 	"fmt"
 	"google.golang.org/grpc"
@@ -35,9 +38,28 @@ func GrpcStandPush(conn *grpc.ClientConn) {
 	//发送请求，取得响应
 	response, err := client.SendData(context.Background(), nil)
 	if err != nil {
-		fmt.Printf("推送数据失败: %s", err)
+		logger.DefaultLogger.Error("推送数据失败: %s", err)
 	} else {
-		fmt.Printf("消息推送成功：%s", response)
+		logger.DefaultLogger.Infof("消息推送成功：%s", response)
 	}
-	fmt.Println()
+}
+
+func GrpcConfigPush(conn *grpc.ClientConn, config *model.AgentConfig, serct string) error {
+	client := grpc_config.NewAgentConfigServiceClient(conn)
+	//准备好请求参数
+	agentConfig := grpc_config.AgentConfig{
+		Serct:        serct,
+		AuthName:     config.AuthName,
+		Token:        config.Token,
+		FieldMapping: config.FieldMapping,
+		NetworkInfo:  config.NetworkInfo,
+	}
+	response, err := client.PushAgentConfig(context.Background(), &agentConfig)
+	if err != nil {
+		logger.DefaultLogger.Error("推送配置失败:", err)
+		return err
+	} else {
+		logger.DefaultLogger.Infof("配置推送成功：%s", response)
+	}
+	return err
 }

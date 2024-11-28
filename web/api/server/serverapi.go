@@ -3,6 +3,7 @@ package server
 import (
 	"bigagent_server/config/global"
 	"bigagent_server/db/mysqldb"
+	grpc_client "bigagent_server/grpcs/client"
 	"bigagent_server/model"
 	"bigagent_server/utils/logger"
 	responses "bigagent_server/web/response"
@@ -95,8 +96,14 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
-	jsonData, err := json.MarshalIndent(config, "", "  ")
-	fmt.Println(string(jsonData))
+	conn, err := grpc_client.InitClient(global.CONF.System.Client_port)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+	}
+	err = grpc_client.GrpcConfigPush(conn, config, global.CONF.System.Serct)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+	}
 	//  匹配密钥并权鉴,
 	//  送入指定model构造器，构造数据类型
 	//	...
