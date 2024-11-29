@@ -1,7 +1,7 @@
 package model
 
 import (
-	grpc_config "bigagent_server/grpcs/grpc_config"
+	"bigagent_server/grpcs/grpc_config"
 	"encoding/json"
 	"fmt"
 )
@@ -10,26 +10,11 @@ type AuthDetails interface {
 	ApplyAuth(args ...interface{}) error
 }
 
-//type FieldMapping struct {
-//	grpc_config.FieldMapping
-//	//StructField string `json:"struct_field"`
-//	//Type        string `json:"type"`
-//}
-//
-//type NetworkInfo struct {
-//	grpc_config.NetworkInfo
-//	//Protocol string `json:"protocol"`
-//	//Host     string `json:"host"`
-//	//Port     int    `json:"port"`
-//	//Path     string `json:"path"`
-//}
-
 type AgentConfig struct {
-	AuthName     string                               `json:"auth_name"`
-	AuthDetails  AuthDetails                          `json:"auth_details"`
-	FieldMapping map[string]*grpc_config.FieldMapping `json:"field_mapping"`
-	NetworkInfo  *grpc_config.NetworkInfo             `json:"network_info"`
-
+	AuthName    string                   `json:"auth_name"`
+	DataName    string                   `json:"data_name"`
+	AuthDetails AuthDetails              `json:"auth_details"`
+	NetworkInfo *grpc_config.NetworkInfo `json:"network_info"`
 	//下面为前端传入的各种认证数据
 	Token string `json:"token"`
 }

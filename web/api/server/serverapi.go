@@ -104,8 +104,4 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
-	//  匹配密钥并权鉴,
-	//  送入指定model构造器，构造数据类型
-	//	...
-	//  执行reponse
 }

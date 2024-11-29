@@ -48,11 +48,11 @@ func GrpcConfigPush(conn *grpc.ClientConn, config *model.AgentConfig, serct stri
 	client := grpc_config.NewAgentConfigServiceClient(conn)
 	//准备好请求参数
 	agentConfig := grpc_config.AgentConfig{
-		Serct:        serct,
-		AuthName:     config.AuthName,
-		Token:        config.Token,
-		FieldMapping: config.FieldMapping,
-		NetworkInfo:  config.NetworkInfo,
+		Serct:       serct,
+		AuthName:    config.AuthName,
+		DataName:    config.DataName,
+		Token:       config.Token,
+		NetworkInfo: config.NetworkInfo,
 	}
 	response, err := client.PushAgentConfig(context.Background(), &agentConfig)
 	if err != nil {
