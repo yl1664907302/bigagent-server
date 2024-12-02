@@ -9,6 +9,6 @@ type System struct {
 	Grpc        string   `json:"grpc" yaml:"grpc"`
 	Logfile     string   `json:"logfile" yaml:"logfile"`
 	Serct       string   `json:"serct"yaml:"serct"`
-	Grpc_server string   `json:"grpc_server" yaml:"grpc_server"`
+	Client_port string   `json:"client_port" yaml:"client_port"`
 	Database    Database `json:"database" yaml:"database"`
 }

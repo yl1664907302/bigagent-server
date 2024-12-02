@@ -146,11 +146,6 @@ func GinRecoveryMiddleware() gin.HandlerFunc {
 					"path":      c.Request.URL.Path,
 					"method":    c.Request.Method,
 				}).Error("panic recovered")
-
-				// 返回 500 错误
-				c.AbortWithStatusJSON(500, gin.H{
-					"message": "Internal Server Error",
-				})
 			}
 		}()
 		c.Next()

@@ -6,7 +6,6 @@ import (
 	"bigagent_server/model"
 	"bigagent_server/utils/logger"
 	"context"
-	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"time"
@@ -14,7 +13,7 @@ import (
 
 // InitClient 通用grpc客户端
 func InitClient(host string) (*grpc.ClientConn, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond) //连接超时设置为1000毫秒
+	ctx, cancel := context.WithTimeout(context.Background(), 2000*time.Millisecond) //连接超时设置为1000毫秒
 	defer cancel()
 	//连接到服务端
 	conn, err := grpc.DialContext(
@@ -25,7 +24,7 @@ func InitClient(host string) (*grpc.ClientConn, error) {
 		grpc.WithDefaultCallOptions(grpc.MaxCallSendMsgSize(10<<20), grpc.MaxCallRecvMsgSize(10<<20)), //默认情况下SendMsg上限是MaxInt32，RecvMsg上限是4M，这里都修改为10M
 	)
 	if err != nil {
-		return nil, fmt.Errorf("服务端'%s'连接超时!", host)
+		return nil, err
 	}
 	return conn, err
 }

@@ -92,16 +92,19 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
-	//err = config.UnmarshalAuthDetails(body)
-	//if err != nil {
-	//	logger.DefaultLogger.Error(err)
-	//}
-	conn, err := grpc_client.InitClient(global.CONF.System.Grpc_server)
+	conn, err := grpc_client.InitClient(global.CONF.System.Client_port)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "连接agent的grpc服务失败！", err.Error())
+		return
 	}
 	err = grpc_client.GrpcConfigPush(conn, config, global.CONF.System.Serct)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "推送agent配置失败！", err.Error())
+		return
 	}
+	//数据库保存配置
+	//...
+	responses.SuccssWithAgent(c, "配置下发成功!", "数据类型为："+config.DataName)
 }
