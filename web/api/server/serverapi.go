@@ -27,7 +27,7 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 	// 创建一个新的http.Client实例
 	client := &http.Client{}
 	// 创建一个新的请求对象，复制原始请求信息
-	req, err := http.NewRequest(c.Request.Method, "http://"+ip+":"+global.CONF.System.Client_port+"/bigagent/showdata", c.Request.Body)
+	req, err := http.NewRequest(c.Request.Method, "http://"+ip+":8010/bigagent/showdata", c.Request.Body)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 		responses.FailWithAgent(c, "查询失败！", err)
@@ -92,11 +92,11 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
-	err = config.UnmarshalAuthDetails(body)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-	}
-	conn, err := grpc_client.InitClient(global.CONF.System.Client_port)
+	//err = config.UnmarshalAuthDetails(body)
+	//if err != nil {
+	//	logger.DefaultLogger.Error(err)
+	//}
+	conn, err := grpc_client.InitClient(global.CONF.System.Grpc_server)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
