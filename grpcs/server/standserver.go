@@ -15,7 +15,7 @@ type GrpcServer struct {
 	UnimplementedPushAgantDataServer
 }
 
-func (s GrpcServer) SendData(ctx context.Context, req *StandData) (*ResponseMessage, error) {
+func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessage, error) {
 	//密钥验证
 	if global.CONF.System.Serct != req.Serct {
 		return &ResponseMessage{
@@ -44,8 +44,8 @@ func (s GrpcServer) SendData(ctx context.Context, req *StandData) (*ResponseMess
 			Hostname:     req.Hostname,
 			IPv4First:    req.Ipv4,
 			Active:       1,
-			Status:       req.Status,
-			ActionDetail: req.ActionDetail,
+			Status:       "online",
+			ActionDetail: "register",
 			CreatedAt:    time.Time{},
 			UpdatedAt:    time.Time{},
 		})
@@ -61,12 +61,13 @@ func (s GrpcServer) SendData(ctx context.Context, req *StandData) (*ResponseMess
 			Hostname:     req.Hostname,
 			IPv4First:    req.Ipv4,
 			Active:       1,
-			Status:       req.Status,
-			ActionDetail: req.ActionDetail,
+			Status:       "online",
+			ActionDetail: "register",
 			UpdatedAt:    time.Time{},
 		})
 	}
 	logger.DefaultLogger.Info("ip地址为：", host)
+	logger.DefaultLogger.Infof("agent信息为：%s", req)
 	return &ResponseMessage{
 		Code:    "200",
 		Message: "agent update success! ",
