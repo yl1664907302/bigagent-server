@@ -2,12 +2,43 @@ package mysqldb
 
 import (
 	"bigagent_server/config/global"
-	model "bigagent_server/model/agent"
+	"bigagent_server/model"
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
 	"time"
 )
+
+func AgentConfigNetSelect() ([]string, error) {
+	var netIPs []string // 定义一个切片来存储查询结果
+
+	// 使用 Pluck 仅查询 "net_ip" 字段
+	err := global.MysqlDataConnect.
+		Model(&model.AgentInfo{}).
+		Pluck("net_ip", &netIPs).
+		Error
+	if err != nil {
+		return nil, err
+	}
+	return netIPs, err
+}
+
+func AgentConfigSelect(id int) (model.AgentConfig, error) {
+	var agentConfigDB model.AgentConfigDB
+	err := global.MysqlDataConnect.Model(model.AgentConfigDB{}).Where("id = ?", id).First(&agentConfigDB).Error
+	return agentConfigDB.ConfigData, err
+}
+
+func AgentConfigCreate(c model.AgentConfigDB) error {
+	err := global.MysqlDataConnect.Create(&c).Error
+	return err
+}
+
+func LoginUser(username string, password string) (model.User, error) {
+	var user model.User
+	err := global.MysqlDataConnect.Where("username = ? AND password = ?", username, password).First(&user).Error
+	return user, err
+}
 
 func AgentNetIPSelectByUuid(uuid string) (string, error) {
 	var agent model.AgentInfo

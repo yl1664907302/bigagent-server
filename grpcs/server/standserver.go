@@ -3,7 +3,7 @@ package grpc_server
 import (
 	"bigagent_server/config/global"
 	"bigagent_server/db/mysqldb"
-	model "bigagent_server/model/agent"
+	"bigagent_server/model"
 	"bigagent_server/utils"
 	"bigagent_server/utils/logger"
 	"context"
