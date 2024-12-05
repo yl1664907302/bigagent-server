@@ -3,7 +3,7 @@ package server
 import (
 	"bigagent_server/config/global"
 	"bigagent_server/db/mysqldb"
-	grpc_client "bigagent_server/grpcs/client"
+	"bigagent_server/model"
 	"bigagent_server/utils/logger"
 	responses "bigagent_server/web/response"
 	"fmt"
@@ -76,6 +76,30 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 	}
 }
 
+// AddAgentConfig 添加agent配置
+func (*ServerApi) AddAgentConfig(c *gin.Context) {
+	if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
+		logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
+		responses.FailWithAgent(c, "配置秘钥认证失败！", nil)
+		return
+	}
+	body, err := c.GetRawData()
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "新增config失败！", err)
+		return
+	}
+	var configDB model.AgentConfigDB
+	err = json.Unmarshal(body, &configDB)
+	err = mysqldb.AgentConfigCreate(configDB)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "新增config失败！", err)
+		return
+	}
+	responses.SuccssWithAgent(c, "新增config成功！", configDB)
+}
+
 func (*ServerApi) PushAgentConfig(c *gin.Context) {
 	if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
 		logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
@@ -86,34 +110,35 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
-	var requestdata map[string]interface{}
-	err = json.Unmarshal(body, requestdata)
+	var requestdata map[string]int
+	err = json.Unmarshal(body, &requestdata)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
 
-	//查询配置通信地址
-	id, _ := requestdata["name"].(int)
+	//查询配置
+	id, _ := requestdata["config_id"]
 	config, err := mysqldb.AgentConfigSelect(id)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
 
-	//查询agent通信地址,配置下发
-
-	conn, err := grpc_client.InitClient(global.CONF.System.Client_port)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "连接agent的grpc服务失败！", err.Error())
-		return
-	}
-	err = grpc_client.GrpcConfigPush(conn, &config, global.CONF.System.Serct)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "推送agent配置失败！", err.Error())
-		return
-	}
-	//数据库更新配置下发记录
-	//...
+	//for _, addr := range result {
+	//	//查询agent通信地址,配置下发
+	//	conn, err := grpc_client.InitClient("")
+	//	if err != nil {
+	//		logger.DefaultLogger.Error("连接agent的grpc服务失败(" + addr + ")！")
+	//	}
+	//	err = grpc_client.GrpcConfigPush(conn, &config, global.CONF.System.Serct)
+	//	if err != nil {
+	//		logger.DefaultLogger.Error("推送agent配置失败(" + addr + ")！")
+	//	}
+	//	if err != nil {
+	//		logger.DefaultLogger.Error("连接agent的grpc服务失败(" + addr + ")！")
+	//	}
+	//	//}
+	//	////数据库更新配置下发记录,agent状态更新
+	//	////...
 	responses.SuccssWithAgent(c, "配置下发成功!", "数据类型为："+config.DataName)
+	//}
 }

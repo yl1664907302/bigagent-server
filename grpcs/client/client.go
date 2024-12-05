@@ -43,15 +43,20 @@ func GrpcStandPush(conn *grpc.ClientConn) {
 	}
 }
 
-func GrpcConfigPush(conn *grpc.ClientConn, config *model.AgentConfig, serct string) error {
+func GrpcConfigPush(conn *grpc.ClientConn, config *model.AgentConfigDB, serct string) error {
 	client := grpc_config.NewAgentConfigServiceClient(conn)
 	//准备好请求参数
 	agentConfig := grpc_config.AgentConfig{
-		Serct:       serct,
-		AuthName:    config.AuthName,
-		DataName:    config.DataName,
-		Token:       config.Token,
-		NetworkInfo: config.NetworkInfo,
+		Serct:    serct,
+		AuthName: config.AuthName,
+		DataName: config.DataName,
+		Token:    config.Token,
+		NetworkInfo: &grpc_config.NetworkInfo{
+			Protocol: config.Protocol,
+			Host:     config.Host,
+			Port:     int64(config.Port),
+			Path:     config.Path,
+		},
 	}
 	response, err := client.PushAgentConfig(context.Background(), &agentConfig)
 	if err != nil {

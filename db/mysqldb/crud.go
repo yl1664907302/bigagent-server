@@ -9,24 +9,40 @@ import (
 	"time"
 )
 
-func AgentConfigNetSelect() ([]string, error) {
-	var netIPs []string // 定义一个切片来存储查询结果
-
-	// 使用 Pluck 仅查询 "net_ip" 字段
-	err := global.MysqlDataConnect.
-		Model(&model.AgentInfo{}).
-		Pluck("net_ip", &netIPs).
-		Error
-	if err != nil {
-		return nil, err
-	}
-	return netIPs, err
+func AgentConfigNetNum() (int64, error) {
+	var num int64
+	err := global.MysqlDataConnect.Model(&model.AgentConfigDB{}).Count(&num).Error
+	return num, err
 }
 
-func AgentConfigSelect(id int) (model.AgentConfig, error) {
+func AgentConfigNetSelect(num int) ([]string, []string, error) {
+	var agents []model.AgentInfo
+	// 使用 Select 查询多个字段（net_ip 和 uuid）
+	err := global.MysqlDataConnect.
+		Model(&model.AgentInfo{}).
+		Select("net_ip", "uuid"). // 查询 net_ip 和 uuid 字段
+		Limit(num).
+		Find(&agents).Error
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// 创建一个切片存储 net_ip 字段的值
+	var netIPs []string
+	for _, agent := range agents {
+		netIPs = append(netIPs, agent.NetIP) // 假设 AgentInfo 中有 NetIP 字段
+	}
+	var uuids []string
+	for _, agent := range agents {
+		uuids = append(uuids, agent.UUID)
+	}
+	return uuids, netIPs, nil
+}
+
+func AgentConfigSelect(id int) (model.AgentConfigDB, error) {
 	var agentConfigDB model.AgentConfigDB
 	err := global.MysqlDataConnect.Model(model.AgentConfigDB{}).Where("id = ?", id).First(&agentConfigDB).Error
-	return agentConfigDB.ConfigData, err
+	return agentConfigDB, err
 }
 
 func AgentConfigCreate(c model.AgentConfigDB) error {

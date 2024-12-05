@@ -8,6 +8,7 @@ import (
 func init() {
 	inits.Viper()
 	inits.Logger()
+	inits.RedisDB()
 	inits.MysqlDB()
 
 }

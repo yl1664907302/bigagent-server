@@ -10,3 +10,4 @@ system:
     mysqluser: "root"
     mysqlpassword: "166490"
     mysqldatabasename: "bigagent"
+  redisaddr: "localhost:6379"

@@ -32,11 +32,11 @@ func checkAgentStatus() {
 	// 超时时间阈值，例如 15 秒未通信
 	timeout := now.Add(-10 * time.Second)
 	// 更新掉线的 Agent
-	dagents, err := mysqldb.AgentUpdateActiveToDead(timeout)
+	_, err := mysqldb.AgentUpdateActiveToDead(timeout)
 	if err != nil {
 		logger.DefaultLogger.Error("sql执行失败：", err)
 	}
-	for _, dagent := range dagents {
-		logger.DefaultLogger.Infof("agent端：%s,已掉线", dagent.IPv4First)
-	}
+	//for _, dagent := range dagents {
+	//	logger.DefaultLogger.Infof("agent端：%s,已掉线", dagent.IPv4First)
+	//}
 }
