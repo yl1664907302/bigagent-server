@@ -4,13 +4,22 @@ import (
 	"bigagent_server/db/mysqldb"
 	"bigagent_server/model"
 	responses "bigagent_server/web/response"
-	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserApi struct{}
 
+// Login godoc
+// @Summary 用户登录接口
+// @Description 处理用户登录请求
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Param loginForm body model.User true "登录表单"
+// @Router /v1/login [post]
 func (*UserApi) Login(c *gin.Context) {
 	// 获取请求参数
 	var loginForm model.User

@@ -2,12 +2,107 @@ package mysqldb
 
 import (
 	"bigagent_server/config/global"
+	redisdb "bigagent_server/db/redis"
 	"bigagent_server/model"
 	"errors"
 	"fmt"
-	"gorm.io/gorm"
 	"time"
+
+	"gorm.io/gorm"
 )
+
+func AgentConfigSelectAll() ([]model.AgentConfigDB, error) {
+	var agentConfigs []model.AgentConfigDB
+	err := global.MysqlDataConnect.Find(&agentConfigs).Error
+	return agentConfigs, err
+}
+
+// UpdateAgentAddressesToRedis 从MySQL批量获取并更新到Redis
+func UpdateAgentAddressesToRedis() error {
+	const (
+		batchSize   = 100 // 每批处理的记录数
+		workerCount = 5   // 工作协程数量
+	)
+
+	// 创建任务通道和错误通道
+	taskChan := make(chan map[string]string, workerCount)
+	errChan := make(chan error, workerCount)
+	doneChan := make(chan bool)
+
+	// 启动工作协程处理Redis写入
+	for i := 0; i < workerCount; i++ {
+		go func() {
+			for batch := range taskChan {
+				if err := redisdb.BatchSetAgentAddresses(batch); err != nil {
+					errChan <- err
+					return
+				}
+			}
+			doneChan <- true
+		}()
+	}
+
+	// 主协程处理MySQL查询
+	go func() {
+		var offset int = 0
+		for {
+			// 分批查询数据
+			rows, err := global.MysqlDataConnect.
+				Table("agent_info").
+				Select("uuid, net_ip").
+				Limit(batchSize).
+				Offset(offset).
+				Rows()
+			if err != nil {
+				errChan <- err
+				return
+			}
+
+			uuidAddressMap := make(map[string]string)
+			recordCount := 0
+
+			// 处理当前批次的数据
+			for rows.Next() {
+				var uuid, ip string
+				if err := rows.Scan(&uuid, &ip); err != nil {
+					rows.Close()
+					errChan <- err
+					return
+				}
+				uuidAddressMap[uuid] = ip
+				recordCount++
+			}
+			rows.Close()
+
+			// 如果当前批次有数据，发送到任务通道
+			if len(uuidAddressMap) > 0 {
+				taskChan <- uuidAddressMap
+			}
+
+			// 如果获取的记录数小于批次大小，说明已经处理完所有数据
+			if recordCount < batchSize {
+				break
+			}
+
+			offset += batchSize
+		}
+		close(taskChan) // 关闭任务通道，通知工作协程没有更多数据
+	}()
+
+	// 等待所有工作协程完成或出现错误
+	finished := 0
+	for {
+		select {
+		case err := <-errChan:
+			return err
+		case <-doneChan:
+			finished++
+			if finished == workerCount {
+				return nil
+			}
+		}
+	}
+}
 
 func AgentConfigNetNum() (int64, error) {
 	var num int64

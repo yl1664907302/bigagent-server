@@ -1,0 +1,171 @@
+basePath: /
+definitions:
+  model.AgentConfigDB:
+    properties:
+      auth_name:
+        type: string
+      created_at:
+        type: string
+      data_name:
+        type: string
+      details:
+        type: string
+      host:
+        description: 主机地址
+        type: string
+      id:
+        type: integer
+      path:
+        description: 请求路径
+        type: string
+      port:
+        description: 端口号
+        type: integer
+      protocol:
+        description: 网络协议，如http或https
+        type: string
+      ranges:
+        type: string
+      role_name:
+        type: string
+      status:
+        type: string
+      times:
+        type: string
+      title:
+        type: string
+      token:
+        description: 下面为前端传入的各种认证数据
+        type: string
+      updated_at:
+        type: string
+    type: object
+  model.User:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      permissions:
+        type: string
+      role:
+        type: string
+      roleId:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is a BigAgent API server.
+  title: BigAgent API
+  version: "1.0"
+paths:
+  /bigagent/showdata:
+    get:
+      consumes:
+      - application/json
+      description: 根据UUID查询Agent并转发请求
+      parameters:
+      - description: Agent UUID
+        in: query
+        name: uuid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: 搜索Agent
+      tags:
+      - Agent管理
+  /v1/add:
+    post:
+      consumes:
+      - application/json
+      description: 新增Agent的配置信息
+      parameters:
+      - description: 认证密钥
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Agent配置信息
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/model.AgentConfigDB'
+      produces:
+      - application/json
+      responses: {}
+      summary: 添加Agent配置
+      tags:
+      - Agent配置
+  /v1/get:
+    get:
+      consumes:
+      - application/json
+      description: 对已经提交的Agent配置进行查询
+      parameters:
+      - description: 认证密钥
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: 查询Agent配置
+      tags:
+      - Agent配置
+  /v1/login:
+    post:
+      consumes:
+      - application/json
+      description: 处理用户登录请求
+      parameters:
+      - description: 登录表单
+        in: body
+        name: loginForm
+        required: true
+        schema:
+          $ref: '#/definitions/model.User'
+      produces:
+      - application/json
+      responses: {}
+      summary: 用户登录接口
+      tags:
+      - 用户管理
+  /v1/push:
+    post:
+      consumes:
+      - application/json
+      description: 向所有在线Agent推送指定配置
+      parameters:
+      - description: 认证密钥
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: 配置ID
+        in: body
+        name: config_id
+        required: true
+        schema:
+          type: integer
+      produces:
+      - application/json
+      responses: {}
+      summary: 推送Agent配置
+      tags:
+      - Agent配置
+schemes:
+- http
+- https
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -7,18 +7,16 @@ import (
 
 func SuccssWithAgent(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
-		"code":    0,
-		"message": msg,
-		"data":    data,
+		"code": 0,
+		"data": data,
 	})
 }
 
 func FailWithAgent(c *gin.Context, msg string, data any) {
 	// 错误的时候要返回错误code
 	c.JSON(http.StatusInternalServerError, gin.H{
-		"code":    500,
-		"message": msg,
-		"data":    data,
+		"code": 500,
+		"data": data,
 	})
 }
 
