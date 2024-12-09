@@ -9,12 +9,11 @@ import (
 	"bigagent_server/utils/logger"
 	responses "bigagent_server/web/response"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/goccy/go-json"
 	"io"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/gin-gonic/gin"
-	"github.com/goccy/go-json"
 )
 
 type ServerApi struct{}
@@ -108,6 +107,13 @@ func (*ServerApi) AddAgentConfig(c *gin.Context) {
 	}
 	var configDB model.AgentConfigDB
 	err = json.Unmarshal(body, &configDB)
+	id, err := mysqldb.AgentConfigId()
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "", "新增config失败！")
+		return
+	}
+	configDB.ID = id + 1
 	err = mysqldb.AgentConfigCreate(configDB)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
@@ -215,18 +221,31 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 }
 
 // @Summary 查询Agent配置
-// @Description 对已经提交的Agent配置进行查询
+// @Description 通过WebSocket实时查询Agent配置
 // @Tags Agent配置
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "认证密钥"
-// @Router /v1/get [get]
+// @Router /v1/ws/config [get]
 func (*ServerApi) GetAgentConfig(c *gin.Context) {
-	configs, err := mysqldb.AgentConfigSelectAll()
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "", "查询配置失败")
+	// 验证密钥
+	if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
+		logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
+		responses.FailWithAgent(c, "", "配置秘钥认证失败！")
 		return
 	}
-	responses.SuccssWithAgent(c, "", configs)
+
+	configs, err := mysqldb.AgentConfigSelectAll(c.Query("page"), c.Query("pageSize"))
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.SuccssWithDetailed(c, "", "查询失败！")
+		return
+	}
+	num, err := mysqldb.AgentConfigNetNum()
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.SuccssWithDetailed(c, "", "查询失败！")
+		return
+	}
+	responses.SuccssWithDetailedFenye(c, "", configs, num)
 }

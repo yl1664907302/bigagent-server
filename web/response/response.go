@@ -27,6 +27,14 @@ func SuccssWithDetailed(c *gin.Context, msg string, data any) {
 	})
 }
 
+func SuccssWithDetailedFenye(c *gin.Context, msg string, data any, total int) {
+	c.JSON(http.StatusOK, gin.H{
+		"code":  0,
+		"data":  data,
+		"total": total,
+	})
+}
+
 func FailWithDetailed(c *gin.Context, msg string, data any) {
 	// 错误的时候要返回错误code
 	c.JSON(http.StatusOK, gin.H{

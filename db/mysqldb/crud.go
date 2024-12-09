@@ -6,14 +6,43 @@ import (
 	"bigagent_server/model"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"gorm.io/gorm"
 )
 
-func AgentConfigSelectAll() ([]model.AgentConfigDB, error) {
+func AgentConfigId() (int, error) {
+	var maxId int
+	err := global.MysqlDataConnect.Model(&model.AgentConfigDB{}).
+		Select("COALESCE(MAX(id), 0)").
+		Scan(&maxId).Error
+	return maxId, err
+}
+
+func AgentConfigSelectAll(cp string, ps string) ([]model.AgentConfigDB, error) {
 	var agentConfigs []model.AgentConfigDB
-	err := global.MysqlDataConnect.Find(&agentConfigs).Error
+
+	// 将字符串参数转换为整数
+	currentPage, err := strconv.Atoi(cp)
+	if err != nil {
+		return nil, err
+	}
+
+	pageSize, err := strconv.Atoi(ps)
+	if err != nil {
+		return nil, err
+	}
+
+	// 计算偏移量
+	offset := (currentPage - 1) * pageSize
+
+	// 使用 Limit 和 Offset 进行分页查询
+	err = global.MysqlDataConnect.
+		Limit(pageSize).
+		Offset(offset).
+		Find(&agentConfigs).Error
+
 	return agentConfigs, err
 }
 
@@ -104,10 +133,10 @@ func UpdateAgentAddressesToRedis() error {
 	}
 }
 
-func AgentConfigNetNum() (int64, error) {
+func AgentConfigNetNum() (int, error) {
 	var num int64
 	err := global.MysqlDataConnect.Model(&model.AgentConfigDB{}).Count(&num).Error
-	return num, err
+	return int(num), err
 }
 
 func AgentConfigNetSelect(num int) ([]string, []string, error) {
