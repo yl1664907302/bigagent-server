@@ -27,11 +27,10 @@ func SuccssWithDetailed(c *gin.Context, msg string, data any) {
 	})
 }
 
-func SuccssWithDetailedFenye(c *gin.Context, msg string, data any, total int) {
+func SuccssWithDetailedFenye(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
-		"code":  0,
-		"data":  data,
-		"total": total,
+		"code": 0,
+		"data": data,
 	})
 }
 

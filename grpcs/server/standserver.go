@@ -5,7 +5,6 @@ import (
 	"bigagent_server/db/mysqldb"
 	"bigagent_server/model"
 	"bigagent_server/utils"
-	"bigagent_server/utils/logger"
 	"context"
 	"fmt"
 	"time"
@@ -44,6 +43,7 @@ func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessag
 			Hostname:     req.Hostname,
 			IPv4First:    req.Ipv4,
 			Active:       1,
+			Grpc_port:    req.GrpcPort,
 			Status:       "online",
 			ActionDetail: "register",
 			CreatedAt:    time.Time{},
@@ -61,13 +61,14 @@ func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessag
 			Hostname:     req.Hostname,
 			IPv4First:    req.Ipv4,
 			Active:       1,
+			Grpc_port:    req.GrpcPort,
 			Status:       "online",
 			ActionDetail: "register",
 			UpdatedAt:    time.Time{},
 		})
 	}
-	logger.DefaultLogger.Info("ip地址为：", host)
-	logger.DefaultLogger.Infof("agent信息为：%s", req)
+	//logger.DefaultLogger.Info("ip地址为：", host)
+	//logger.DefaultLogger.Infof("agent信息为：%s", req)
 	return &ResponseMessage{
 		Code:    "200",
 		Message: "agent update success! ",

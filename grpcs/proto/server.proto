@@ -9,6 +9,7 @@ message SmpData {
   string uuid = 2;
   string hostname = 3;
   string ipv4 = 4;
+  string grpc_port = 6;
   google.protobuf.Timestamp time = 5;
   SmpCpu cpu = 7;
   map<string,SmpDisk> disk = 8;

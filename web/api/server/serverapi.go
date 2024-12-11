@@ -114,6 +114,7 @@ func (*ServerApi) AddAgentConfig(c *gin.Context) {
 		return
 	}
 	configDB.ID = id + 1
+	configDB.Status = "有效"
 	err = mysqldb.AgentConfigCreate(configDB)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
@@ -158,6 +159,8 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 
 	responses.SuccssWithDetailed(c, "", "正在下发中，请查看agent状态")
 
+	//更新配置使用次数
+	err = mysqldb.AgentConfigUpdateTimes(id)
 	//从Redis批量获取所有agent地址
 	agentAddrs, err := redisdb.ScanAgentAddresses()
 	if err != nil {
@@ -244,8 +247,29 @@ func (*ServerApi) GetAgentConfig(c *gin.Context) {
 	num, err := mysqldb.AgentConfigNetNum()
 	if err != nil {
 		logger.DefaultLogger.Error(err)
-		responses.SuccssWithDetailed(c, "", "查询失败！")
+		responses.FailWithAgent(c, "", "查询失败！")
 		return
 	}
-	responses.SuccssWithDetailedFenye(c, "", configs, num)
+	responses.SuccssWithDetailedFenye(c, "", map[string]any{
+		"configs": configs,
+		"nums":    num,
+	})
+}
+
+func (*ServerApi) DelAgentConfig(c *gin.Context) {
+	// 验证密钥
+	if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
+		logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
+		responses.FailWithAgent(c, "", "配置秘钥认证失败！")
+		return
+	}
+	id := c.Query("config_id")
+	err := mysqldb.AgentConfigDel(id)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "", "删除失败！")
+		return
+	}
+	responses.SuccssWithDetailed(c, "", "删除成功！")
+	return
 }

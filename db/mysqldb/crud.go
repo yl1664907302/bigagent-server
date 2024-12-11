@@ -12,6 +12,30 @@ import (
 	"gorm.io/gorm"
 )
 
+func AgentConfigDel(configID string) error {
+	// 先查询记录是否存在
+	var config model.AgentConfigDB
+	result := global.MysqlDataConnect.First(&config, configID)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("记录不存在: %s", configID)
+		}
+		return fmt.Errorf("查询记录失败: %v", result.Error)
+	}
+
+	// 执行软删除
+	if err := global.MysqlDataConnect.Delete(&config).Error; err != nil {
+		return fmt.Errorf("删除失败: %v", err)
+	}
+
+	return nil
+}
+
+func AgentConfigUpdateTimes(config_id int) error {
+	err := global.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id = ?", config_id).Update("times", gorm.Expr("times + ?", 1)).Error
+	return err
+}
+
 func AgentConfigId() (int, error) {
 	var maxId int
 	err := global.MysqlDataConnect.Model(&model.AgentConfigDB{}).
@@ -39,6 +63,7 @@ func AgentConfigSelectAll(cp string, ps string) ([]model.AgentConfigDB, error) {
 
 	// 使用 Limit 和 Offset 进行分页查询
 	err = global.MysqlDataConnect.
+		Where("deleted_at IS NULL").
 		Limit(pageSize).
 		Offset(offset).
 		Find(&agentConfigs).Error
@@ -78,7 +103,7 @@ func UpdateAgentAddressesToRedis() error {
 			// 分批查询数据
 			rows, err := global.MysqlDataConnect.
 				Table("agent_info").
-				Select("uuid, net_ip").
+				Select("uuid, net_ip", "grpc_port").
 				Limit(batchSize).
 				Offset(offset).
 				Rows()
@@ -92,13 +117,13 @@ func UpdateAgentAddressesToRedis() error {
 
 			// 处理当前批次的数据
 			for rows.Next() {
-				var uuid, ip string
-				if err := rows.Scan(&uuid, &ip); err != nil {
+				var uuid, ip, port string
+				if err := rows.Scan(&uuid, &ip, &port); err != nil {
 					rows.Close()
 					errChan <- err
 					return
 				}
-				uuidAddressMap[uuid] = ip
+				uuidAddressMap[uuid] = ip + ":" + port
 				recordCount++
 			}
 			rows.Close()
