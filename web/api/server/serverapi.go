@@ -14,6 +14,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"time"
 )
 
 type ServerApi struct{}
@@ -176,31 +177,54 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 
 	// 发处理配置推送
 	errChan := make(chan error, len(agentAddrs))
+	done := make(chan struct{})
+	timeout := time.After(30 * time.Second) // 设置30秒超时
+
 	for _, addr := range agentAddrs {
 		go func(address string) {
-			conn, err := grpc_client.InitClient(address)
-			if err != nil {
-				errChan <- fmt.Errorf("连接agent(%s)失败: %v", address, err)
+			select {
+			case <-done: // 如果收到done信号，直接返回
 				return
-			}
-			defer conn.Close()
+			default:
+				conn, err := grpc_client.InitClient(address)
+				if err != nil {
+					errChan <- fmt.Errorf("连接agent(%s)失败: %v", address, err)
+					return
+				}
+				defer conn.Close()
 
-			err = grpc_client.GrpcConfigPush(conn, &config, global.CONF.System.Serct)
-			if err != nil {
-				errChan <- fmt.Errorf("推送配置到agent(%s)失败: %v", address, err)
-				return
+				err = grpc_client.GrpcConfigPush(conn, &config, global.CONF.System.Serct)
+				if err != nil {
+					errChan <- fmt.Errorf("推送配置到agent(%s)失败: %v", address, err)
+					return
+				}
+				errChan <- nil
 			}
-			errChan <- nil
 		}(addr)
 	}
 
 	// 收集错误信息
 	var failedCount int
 	agentUUIDs, _, err := mysqldb.AgentConfigNetSelect(len(agentAddrs))
-	for i := 0; i < len(agentUUIDs); i++ {
-		if err := <-errChan; err != nil {
-			failedCount++
-			logger.DefaultLogger.Error(err)
+
+	select {
+	case <-timeout:
+		close(done) // 通知所有goroutine退出
+		responses.FailWithAgent(c, "", "配置推送超时")
+		return
+	default:
+		for i := 0; i < len(agentUUIDs); i++ {
+			select {
+			case err := <-errChan:
+				if err != nil {
+					failedCount++
+					logger.DefaultLogger.Error(err)
+				}
+			case <-timeout:
+				close(done) // 通知所有goroutine退出
+				responses.FailWithAgent(c, "", "配置推送部分超时")
+				return
+			}
 		}
 	}
 
