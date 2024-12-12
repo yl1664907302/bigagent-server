@@ -44,8 +44,8 @@ func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessag
 			IPv4First:    req.Ipv4,
 			Active:       1,
 			Grpc_port:    req.GrpcPort,
-			Status:       "online",
-			ActionDetail: "register",
+			Status:       req.Status,
+			ActionDetail: req.Actiondetail,
 			CreatedAt:    time.Time{},
 			UpdatedAt:    time.Time{},
 		})
@@ -54,7 +54,6 @@ func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessag
 			Message: "agent register success ！",
 		}, err
 	} else {
-		//	存在就执行更新
 		err = mysqldb.AgentUpdateAllExceptUUID(req.Uuid, &model.AgentInfo{
 			UUID:         req.Uuid,
 			NetIP:        host,
@@ -62,13 +61,11 @@ func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessag
 			IPv4First:    req.Ipv4,
 			Active:       1,
 			Grpc_port:    req.GrpcPort,
-			Status:       "online",
-			ActionDetail: "register",
+			Status:       req.Status,
+			ActionDetail: req.Actiondetail,
 			UpdatedAt:    time.Time{},
 		})
 	}
-	//logger.DefaultLogger.Info("ip地址为：", host)
-	//logger.DefaultLogger.Infof("agent信息为：%s", req)
 	return &ResponseMessage{
 		Code:    "200",
 		Message: "agent update success! ",

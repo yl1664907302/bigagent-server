@@ -10,6 +10,8 @@ message SmpData {
   string hostname = 3;
   string ipv4 = 4;
   string grpc_port = 6;
+  string actiondetail = 13;
+  string status = 14;
   google.protobuf.Timestamp time = 5;
   SmpCpu cpu = 7;
   map<string,SmpDisk> disk = 8;
@@ -96,4 +98,4 @@ message ResponseMessage {
   string message = 2;
 }
 
-//protoc --gogofaster_out=plugins=grpc:./grpcs/server/ --proto_path=./grpcs/proto/ server.proto
+// protoc -I . --go_out=plugins=grpc:. ./server.proto

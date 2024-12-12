@@ -102,13 +102,11 @@ func (*ServerApi) AddAgentConfig(c *gin.Context) {
 	}
 	var configDB model.AgentConfigDB
 	err = json.Unmarshal(body, &configDB)
-	id, err := mysqldb.AgentConfigId()
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 		responses.FailWithAgent(c, "", "新增config失败！")
 		return
 	}
-	configDB.ID = id + 1
 	configDB.Status = "有效"
 	err = mysqldb.AgentConfigCreate(configDB)
 	if err != nil {
@@ -213,13 +211,24 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 	}
 }
 
-// @Summary 查询Agent配置
-// @Description 通过WebSocket实时查询Agent配置
+// @Summary 下发指定主机的Agent配置
+// @Description
 // @Tags Agent配置
 // @Accept json
 // @Produce json
 // @Param Authorization header string true "认证密钥"
-// @Router /v1/ws/config [get]
+// @Router /v1/push_host [post]
+func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
+	// TODO: 编写指定主机下发配置的逻辑
+}
+
+// @Summary 查询Agent配置
+// @Description
+// @Tags Agent配置
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "认证密钥"
+// @Router /v1/get [get]
 func (*ServerApi) GetAgentConfig(c *gin.Context) {
 	configs, err := mysqldb.AgentConfigSelectAll(c.Query("page"), c.Query("pageSize"))
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"strconv"
 	"time"
 )
 
@@ -32,6 +33,7 @@ func GrpcConfigPush(conn *grpc.ClientConn, config *model.AgentConfigDB, serct st
 	client := grpc_config.NewAgentConfigServiceClient(conn)
 	//准备好请求参数
 	agentConfig := grpc_config.AgentConfig{
+		Id:       strconv.Itoa(config.ID),
 		Serct:    serct,
 		AuthName: config.AuthName,
 		DataName: config.DataName,
