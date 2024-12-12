@@ -2,7 +2,6 @@ package grpc_client
 
 import (
 	"bigagent_server/grpcs/grpc_config"
-	"bigagent_server/grpcs/server"
 	"bigagent_server/model"
 	"bigagent_server/utils/logger"
 	"context"
@@ -29,20 +28,6 @@ func InitClient(host string) (*grpc.ClientConn, error) {
 	return conn, err
 }
 
-// GrpcStandPush 执行GRPC标准数据类型推送方法
-func GrpcStandPush(conn *grpc.ClientConn) {
-	client := grpc_server.NewPushAgantDataClient(conn)
-	//准备好请求参数
-	//...
-	//发送请求，取得响应
-	response, err := client.SendData(context.Background(), nil)
-	if err != nil {
-		logger.DefaultLogger.Error("推送数据失败: %s", err)
-	} else {
-		logger.DefaultLogger.Infof("消息推送成功：%s", response)
-	}
-}
-
 func GrpcConfigPush(conn *grpc.ClientConn, config *model.AgentConfigDB, serct string) error {
 	client := grpc_config.NewAgentConfigServiceClient(conn)
 	//准备好请求参数
@@ -51,6 +36,7 @@ func GrpcConfigPush(conn *grpc.ClientConn, config *model.AgentConfigDB, serct st
 		AuthName: config.AuthName,
 		DataName: config.DataName,
 		Token:    config.Token,
+		SlotName: config.Slot_Name,
 		NetworkInfo: &grpc_config.NetworkInfo{
 			Protocol: config.Protocol,
 			Host:     config.Host,

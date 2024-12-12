@@ -12,6 +12,27 @@ import (
 	"gorm.io/gorm"
 )
 
+func AgentConfigEdit(configID int, newconfig model.AgentConfigDB) error {
+	// 检查配置是否存在且未被软删除
+	var config model.AgentConfigDB
+	err := global.MysqlDataConnect.Unscoped().
+		Where("id = ?", configID).
+		First(&config).Error
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("配置不存在")
+		}
+		return fmt.Errorf("查询配置失败: %v", err)
+	}
+
+	// 检查是否被软删除
+	if !config.DeletedAt.Time.IsZero() {
+		return fmt.Errorf("配置已被删除，无法编辑")
+	}
+	err = global.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id = ?", configID).Updates(&newconfig).Error
+	return err
+}
+
 func AgentConfigDel(configID string) error {
 	// 先查询记录是否存在
 	var config model.AgentConfigDB

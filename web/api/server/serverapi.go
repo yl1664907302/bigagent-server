@@ -94,11 +94,6 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 // @Param config body model.AgentConfigDB true "Agent配置信息"
 // @Router /v1/add [post]
 func (*ServerApi) AddAgentConfig(c *gin.Context) {
-	if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
-		logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
-		responses.FailWithAgent(c, "", "配置秘钥认证失败！")
-		return
-	}
 	body, err := c.GetRawData()
 	if err != nil {
 		logger.DefaultLogger.Error(err)
@@ -133,11 +128,6 @@ func (*ServerApi) AddAgentConfig(c *gin.Context) {
 // @Param config_id body int true "配置ID"
 // @Router /v1/push [post]
 func (*ServerApi) PushAgentConfig(c *gin.Context) {
-	if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
-		logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
-		responses.FailWithAgent(c, "", "配置秘钥认证失败！")
-		return
-	}
 	body, err := c.GetRawData()
 	if err != nil {
 		logger.DefaultLogger.Error(err)
@@ -231,13 +221,6 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 // @Param Authorization header string true "认证密钥"
 // @Router /v1/ws/config [get]
 func (*ServerApi) GetAgentConfig(c *gin.Context) {
-	// 验证密钥
-	if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
-		logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
-		responses.FailWithAgent(c, "", "配置秘钥认证失败！")
-		return
-	}
-
 	configs, err := mysqldb.AgentConfigSelectAll(c.Query("page"), c.Query("pageSize"))
 	if err != nil {
 		logger.DefaultLogger.Error(err)
@@ -257,13 +240,7 @@ func (*ServerApi) GetAgentConfig(c *gin.Context) {
 }
 
 func (*ServerApi) DelAgentConfig(c *gin.Context) {
-	// 验证密钥
-	if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
-		logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
-		responses.FailWithAgent(c, "", "配置秘钥认证失败！")
-		return
-	}
-	id := c.Query("config_id")
+	id := c.Param("config_id")
 	err := mysqldb.AgentConfigDel(id)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
@@ -272,4 +249,26 @@ func (*ServerApi) DelAgentConfig(c *gin.Context) {
 	}
 	responses.SuccssWithDetailed(c, "", "删除成功！")
 	return
+}
+
+func (*ServerApi) EditAgentConfig(c *gin.Context) {
+	body, err := c.GetRawData()
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "", "编辑config失败:"+err.Error())
+		return
+	}
+	var configDB model.AgentConfigDB
+	err = json.Unmarshal(body, &configDB)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "", "编辑config失败:"+err.Error())
+	}
+	err = mysqldb.AgentConfigEdit(configDB.ID, configDB)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "", "编辑config失败:"+err.Error())
+		return
+	}
+	responses.SuccssWithAgent(c, "", "编辑config成功！")
 }

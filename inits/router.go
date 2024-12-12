@@ -1,17 +1,20 @@
 package inits
 
 import (
+	"bigagent_server/config/global"
 	"bigagent_server/utils/logger"
+	responses "bigagent_server/web/response"
 	"bigagent_server/web/router"
+	"fmt"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"net/http"
+	"time"
 )
 
 func Router() *gin.Engine {
 	r := gin.Default()
-	r.Use(Cors)
 	//配置json日志
-	r.Use(logger.GinLoggerMiddleware(), logger.GinRecoveryMiddleware())
+	r.Use(logger.GinRecoveryMiddleware(), AuthMiddleware(), InitCORS())
 	// 基础路由
 	r1 := router.RouterGroupApp.ServerRouter
 	r1.Router(r)
@@ -26,19 +29,40 @@ func Router() *gin.Engine {
 	return r
 }
 
-// 跨域
-func Cors(c *gin.Context) {
-	method := c.Request.Method
-	origin := c.Request.Header.Get("Origin")
-	c.Header("Access-Control-Allow-Origin", origin)
-	c.Header("Access-Control-Allow-Headers", "Content-Type,AccessToken,X-CSRF-Token, Authorization, Token,X-Token,X-User-Id")
-	c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS,DELETE,PUT")
-	c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Content-Type, New-Token, New-Expires-At")
-	c.Header("Access-Control-Allow-Credentials", "true")
-	// 放行所有OPTIONS方法
-	if method == "OPTIONS" {
-		c.AbortWithStatus(http.StatusNoContent)
+func InitCORS() gin.HandlerFunc {
+	return cors.New(cors.Config{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}, // 添加 OPTIONS
+		AllowHeaders: []string{
+			"Origin",
+			"Authorization",
+			"Content-Type",
+			"Accept",
+			"X-Requested-With",
+			"Access-Control-Allow-Methods",
+		},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	})
+}
+
+// AuthMiddleware 验证密钥中间件
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 处理 OPTIONS 请求
+		if c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+
+		// 验证密钥
+		if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
+			logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
+			responses.FailWithAgent(c, "", "配置秘钥认证失败！")
+			c.Abort()
+			return
+		}
+		c.Next()
 	}
-	// 处理请求
-	c.Next()
 }
