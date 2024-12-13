@@ -3,6 +3,7 @@ package grpc_server
 import (
 	"bigagent_server/config/global"
 	"bigagent_server/db/mysqldb"
+	redisdb "bigagent_server/db/redis"
 	"bigagent_server/model"
 	"bigagent_server/utils"
 	"context"
@@ -49,6 +50,7 @@ func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessag
 			CreatedAt:    time.Time{},
 			UpdatedAt:    time.Time{},
 		})
+		go redisdb.SetAgentAddresses(ctx, req.Uuid, host).Error()
 		return &ResponseMessage{
 			Code:    "200",
 			Message: "agent register success ！",

@@ -8,13 +8,15 @@ import (
 	"bigagent_server/model"
 	"bigagent_server/utils/logger"
 	responses "bigagent_server/web/response"
+	"context"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/goccy/go-json"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/goccy/go-json"
 )
 
 type ServerApi struct{}
@@ -127,112 +129,84 @@ func (*ServerApi) AddAgentConfig(c *gin.Context) {
 // @Param config_id body int true "配置ID"
 // @Router /v1/push [post]
 func (*ServerApi) PushAgentConfig(c *gin.Context) {
-	body, err := c.GetRawData()
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// 1. 获取配置ID并查询配置
 	var requestdata map[string]int
-	err = json.Unmarshal(body, &requestdata)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
+	if body, err := c.GetRawData(); err != nil {
+		responses.FailWithAgent(c, "", "获取请求数据失败")
+		return
+	} else if err = json.Unmarshal(body, &requestdata); err != nil {
+		responses.FailWithAgent(c, "", "解析请求数据失败")
+		return
 	}
 
-	//查询配置
-	id, _ := requestdata["config_id"]
+	id := requestdata["config_id"]
 	config, err := mysqldb.AgentConfigSelect(id)
 	if err != nil {
-		logger.DefaultLogger.Error(err)
 		responses.FailWithAgent(c, "", "查询配置失败")
 		return
 	}
 
+	// 2. 获取agent地址列表
+	agentAddrs, err := redisdb.ScanAgentAddresses(c)
+	if err != nil || len(agentAddrs) == 0 {
+		if err := mysqldb.UpdateAgentAddressesToRedis(c); err != nil {
+			responses.FailWithAgent(c, "", "更新agent地址失败")
+			return
+		}
+		agentAddrs, _ = redisdb.ScanAgentAddresses(c)
+	}
+
 	responses.SuccssWithDetailed(c, "", "正在下发中，请查看agent状态")
 
-	//更新配置使用次数
-	err = mysqldb.AgentConfigUpdateTimes(id)
-	//从Redis批量获取所有agent地址
-	agentAddrs, err := redisdb.ScanAgentAddresses()
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		//responses.FailWithAgent(c, "", "获取agent地址失败")
-		return
-	}
-
-	// 如果Redis中没有数据，从MySQL获取并更新Redis
-	if len(agentAddrs) == 0 {
-		// 从MySQL批量获取并更新Redis
-		if err := mysqldb.UpdateAgentAddressesToRedis(); err != nil {
-			logger.DefaultLogger.Error(err)
-			responses.FailWithAgent(c, "", "更新agent地址缓存失败")
-			return
-		}
-		// 重新从Redis获取
-		agentAddrs, err = redisdb.ScanAgentAddresses()
-		if err != nil {
-			logger.DefaultLogger.Error(err)
-			responses.FailWithAgent(c, "", "获取agent地址失败")
-			return
-		}
-	}
-
-	// 发处理配置推送
-	errChan := make(chan error, len(agentAddrs))
-	done := make(chan struct{})
-	timeout := time.After(30 * time.Second) // 设置30秒超时
+	// 3. 并发推送配置
+	results := make(chan error, len(agentAddrs))
+	semaphore := make(chan struct{}, 10) // 限制并发数为10
 
 	for _, addr := range agentAddrs {
+		semaphore <- struct{}{} // 获取信号量
 		go func(address string) {
-			select {
-			case <-done: // 如果收到done信号，直接返回
-				return
-			default:
-				conn, err := grpc_client.InitClient(address)
-				if err != nil {
-					errChan <- fmt.Errorf("连接agent(%s)失败: %v", address, err)
-					return
-				}
-				defer conn.Close()
+			defer func() { <-semaphore }() // 释放信号量
 
-				err = grpc_client.GrpcConfigPush(conn, &config, global.CONF.System.Serct)
-				if err != nil {
-					errChan <- fmt.Errorf("推送配置到agent(%s)失败: %v", address, err)
-					return
-				}
-				errChan <- nil
+			conn, err := grpc_client.InitClient(address)
+			if err != nil {
+				results <- fmt.Errorf("连接agent(%s)失败: %v", address, err)
+				return
 			}
+			defer conn.Close()
+
+			if err := grpc_client.GrpcConfigPush(conn, &config, global.CONF.System.Serct); err != nil {
+				results <- fmt.Errorf("推送到agent(%s)失败: %v", address, err)
+				return
+			}
+			results <- nil
 		}(addr)
 	}
 
-	// 收集错误信息
+	// 4. 收集结果
 	var failedCount int
-	agentUUIDs, _, err := mysqldb.AgentConfigNetSelect(len(agentAddrs))
-
-	select {
-	case <-timeout:
-		close(done) // 通知所有goroutine退出
-		responses.FailWithAgent(c, "", "配置推送超时")
-		return
-	default:
-		for i := 0; i < len(agentUUIDs); i++ {
-			select {
-			case err := <-errChan:
-				if err != nil {
-					failedCount++
-					logger.DefaultLogger.Error(err)
-				}
-			case <-timeout:
-				close(done) // 通知所有goroutine退出
-				responses.FailWithAgent(c, "", "配置推送部分超时")
-				return
+	for i := 0; i < len(agentAddrs); i++ {
+		select {
+		case err := <-results:
+			if err != nil {
+				failedCount++
+				logger.DefaultLogger.Error(err)
 			}
+		case <-ctx.Done():
+			responses.FailWithAgent(c, "", "配置推送超时")
+			return
 		}
 	}
 
-	if failedCount > 0 {
-		//responses.SuccssWithAgent(c, "", fmt.Sprintf("配置下发异常，失败%d个", failedCount))
-	} else {
-		//responses.SuccssWithAgent(c, "", "配置下发成功!")
-	}
+	// 5. 异步更新配置使用次数
+	go func() {
+		err := mysqldb.AgentConfigUpdateTimes(id)
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+		}
+	}()
 }
 
 // @Summary 下发指定主机的Agent配置
@@ -243,7 +217,89 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 // @Param Authorization header string true "认证密钥"
 // @Router /v1/push_host [post]
 func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
-	// TODO: 编写指定主机下发配置的逻辑
+	// 1. 获取请求数据
+	var requestData struct {
+		ConfigID int      `json:"config_id"`
+		Uuids    []string `json:"uuids"` // 主机IP列表
+	}
+	if body, err := c.GetRawData(); err != nil {
+		responses.FailWithAgent(c, "", "获取请求数据失败")
+		return
+	} else if err = json.Unmarshal(body, &requestData); err != nil {
+		responses.FailWithAgent(c, "", "解析请求数据失败")
+		return
+	}
+
+	// 2. 查询配置信息
+	config, err := mysqldb.AgentConfigSelect(requestData.ConfigID)
+	if err != nil {
+		responses.FailWithAgent(c, "", "查询配置失败")
+		return
+	}
+
+	// 3. 验证uuid是否有效
+	validHosts := make([]string, 0)
+	for _, uuid := range requestData.Uuids {
+		if exists, host := redisdb.CheckAgentExists(c, uuid); exists {
+			validHosts = append(validHosts, host)
+		}
+	}
+
+	if len(validHosts) == 0 {
+		responses.FailWithAgent(c, "", "未找到有效的目标主机")
+		return
+	}
+
+	responses.SuccssWithDetailed(c, "", "指定agent，正在更新配置")
+
+	// 4. 并发推送配置
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	results := make(chan error, len(validHosts))
+	semaphore := make(chan struct{}, 5) // 限制并发数为5
+
+	for _, addr := range validHosts {
+		semaphore <- struct{}{}
+		go func(address string) {
+			defer func() { <-semaphore }()
+
+			conn, err := grpc_client.InitClient(address)
+			if err != nil {
+				results <- fmt.Errorf("连接agent(%s)失败: %v", address, err)
+				return
+			}
+			defer conn.Close()
+
+			if err := grpc_client.GrpcConfigPush(conn, &config, global.CONF.System.Serct); err != nil {
+				results <- fmt.Errorf("推送到agent(%s)失败: %v", address, err)
+				return
+			}
+			results <- nil
+		}(addr)
+	}
+
+	// 5. 收集结果
+	var failedCount int
+	for i := 0; i < len(validHosts); i++ {
+		select {
+		case err := <-results:
+			if err != nil {
+				failedCount++
+				logger.DefaultLogger.Error(err)
+			}
+		case <-ctx.Done():
+			responses.FailWithAgent(c, "", "配置推送超时")
+			return
+		}
+	}
+
+	// 6. 异步更新配置使用次数
+	go func() {
+		if err := mysqldb.AgentConfigUpdateTimes(requestData.ConfigID); err != nil {
+			logger.DefaultLogger.Error(err)
+		}
+	}()
 }
 
 // @Summary 查询Agent配置
@@ -272,6 +328,13 @@ func (*ServerApi) GetAgentConfig(c *gin.Context) {
 	})
 }
 
+// @Summary 删除Agent配置
+// @Description
+// @Tags Agent配置
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "认证密钥"
+// @Router /v1/del [delete]
 func (*ServerApi) DelAgentConfig(c *gin.Context) {
 	id := c.Param("config_id")
 	err := mysqldb.AgentConfigDel(id)
@@ -284,6 +347,13 @@ func (*ServerApi) DelAgentConfig(c *gin.Context) {
 	return
 }
 
+// @Summary 修改Agent配置
+// @Description
+// @Tags Agent配置
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "认证密钥"
+// @Router /v1/edit [put]
 func (*ServerApi) EditAgentConfig(c *gin.Context) {
 	body, err := c.GetRawData()
 	if err != nil {

@@ -75,9 +75,56 @@ const docTemplate = `{
                 "responses": {}
             }
         },
+        "/v1/del": {
+            "delete": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agent配置"
+                ],
+                "summary": "删除Agent配置",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "认证密钥",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
+        "/v1/edit": {
+            "put": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agent配置"
+                ],
+                "summary": "修改Agent配置",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "认证密钥",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
+        },
         "/v1/get": {
             "get": {
-                "description": "对已经提交的Agent配置进行查询",
                 "consumes": [
                     "application/json"
                 ],
@@ -160,6 +207,30 @@ const docTemplate = `{
                 ],
                 "responses": {}
             }
+        },
+        "/v1/push_host": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Agent配置"
+                ],
+                "summary": "下发指定主机的Agent配置",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "认证密钥",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {}
+            }
         }
     },
     "definitions": {
@@ -201,6 +272,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role_name": {
+                    "type": "string"
+                },
+                "slot_name": {
                     "type": "string"
                 },
                 "status": {

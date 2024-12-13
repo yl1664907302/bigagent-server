@@ -13,9 +13,8 @@ const (
 )
 
 // ScanAgentAddresses 使用SCAN命令批量获取所有agent地址
-func ScanAgentAddresses() ([]string, error) {
+func ScanAgentAddresses(c context.Context) ([]string, error) {
 	var addresses []string
-	ctx := context.Background()
 	pattern := AgentAddressPrefix + "*"
 	cursor := uint64(0)
 
@@ -23,7 +22,7 @@ func ScanAgentAddresses() ([]string, error) {
 		var keys []string
 		var err error
 		// 使用SCAN命令批量扫描key
-		keys, cursor, err = global.RedisDataConnect.Scan(ctx, cursor, pattern, ScanBatchSize).Result()
+		keys, cursor, err = global.RedisDataConnect.Scan(c, cursor, pattern, ScanBatchSize).Result()
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +30,7 @@ func ScanAgentAddresses() ([]string, error) {
 		// 如果有找到key，批量获取它们的值
 		if len(keys) > 0 {
 			// 使用MGET批量获取值
-			values, err := global.RedisDataConnect.MGet(ctx, keys...).Result()
+			values, err := global.RedisDataConnect.MGet(c, keys...).Result()
 			if err != nil {
 				return nil, err
 			}
@@ -44,7 +43,7 @@ func ScanAgentAddresses() ([]string, error) {
 			}
 		}
 
-		// 如果cursor为0，说明已经扫描完所有key
+		// ���果cursor为0，说明已经扫描完所有key
 		if cursor == 0 {
 			break
 		}
@@ -54,23 +53,55 @@ func ScanAgentAddresses() ([]string, error) {
 }
 
 // BatchSetAgentAddresses 批量设置agent地址
-func BatchSetAgentAddresses(uuidAddressMap map[string]string) error {
-	ctx := context.Background()
+func BatchSetAgentAddresses(c context.Context, uuidAddressMap map[string]string) error {
 	pipe := global.RedisDataConnect.Pipeline()
 
 	for uuid, addr := range uuidAddressMap {
 		key := AgentAddressPrefix + uuid
-		pipe.Set(ctx, key, addr, AgentAddressTTL)
+		pipe.Set(c, key, addr, AgentAddressTTL)
 	}
 
-	_, err := pipe.Exec(ctx)
+	_, err := pipe.Exec(c)
 	return err
 }
 
-func SetAgentAddresses(uuid string, addr string) error {
-	ctx := context.Background()
+func SetAgentAddresses(c context.Context, uuid string, addr string) error {
 	key := AgentAddressPrefix + uuid
-	err := global.RedisDataConnect.Set(ctx, key, addr, AgentAddressTTL).Err()
+	err := global.RedisDataConnect.Set(c, key, addr, AgentAddressTTL).Err()
 	return err
 
+}
+
+// GetAgentNum 获取agent数量
+func GetAgentNum(c context.Context) (int, error) {
+	pattern := AgentAddressPrefix + "*"
+	cursor := uint64(0)
+	count := 0
+	for {
+		var keys []string
+		var err error
+		keys, cursor, err = global.RedisDataConnect.Scan(c, cursor, pattern, ScanBatchSize).Result()
+		if err != nil {
+			return 0, err
+		}
+
+		count += len(keys)
+
+		// 如果cursor为0，说明已经扫描完所有key
+		if cursor == 0 {
+			break
+		}
+	}
+	return count, nil
+}
+
+func CheckAgentExists(ctx context.Context, key string) (bool, string) {
+	// 使用Get命令获取key的值
+	val, err := global.RedisDataConnect.Get(ctx, AgentAddressPrefix+key).Result()
+	if err != nil {
+		// 如果key不存在或发生错误，返回false和空字符串
+		return false, ""
+	}
+	// 如果key存在，返回true和对应的值
+	return true, val
 }

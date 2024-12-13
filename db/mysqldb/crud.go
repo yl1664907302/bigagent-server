@@ -4,6 +4,7 @@ import (
 	"bigagent_server/config/global"
 	redisdb "bigagent_server/db/redis"
 	"bigagent_server/model"
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -11,6 +12,12 @@ import (
 
 	"gorm.io/gorm"
 )
+
+func AgentNum() (int, error) {
+	var num int64
+	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).Count(&num).Error
+	return int(num), err
+}
 
 func AgentConfigEdit(configID int, newconfig model.AgentConfigDB) error {
 	// 检查配置是否存在且未被软删除
@@ -93,7 +100,7 @@ func AgentConfigSelectAll(cp string, ps string) ([]model.AgentConfigDB, error) {
 }
 
 // UpdateAgentAddressesToRedis 从MySQL批量获取并更新到Redis
-func UpdateAgentAddressesToRedis() error {
+func UpdateAgentAddressesToRedis(c context.Context) error {
 	const (
 		batchSize   = 100 // 每批处理的记录数
 		workerCount = 5   // 工作协程数量
@@ -108,7 +115,7 @@ func UpdateAgentAddressesToRedis() error {
 	for i := 0; i < workerCount; i++ {
 		go func() {
 			for batch := range taskChan {
-				if err := redisdb.BatchSetAgentAddresses(batch); err != nil {
+				if err := redisdb.BatchSetAgentAddresses(c, batch); err != nil {
 					errChan <- err
 					return
 				}

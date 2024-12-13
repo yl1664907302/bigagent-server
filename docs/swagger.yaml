@@ -28,6 +28,8 @@ definitions:
         type: string
       role_name:
         type: string
+      slot_name:
+        type: string
       status:
         type: string
       times:
@@ -102,11 +104,42 @@ paths:
       summary: 添加Agent配置
       tags:
       - Agent配置
+  /v1/del:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: 认证密钥
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: 删除Agent配置
+      tags:
+      - Agent配置
+  /v1/edit:
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: 认证密钥
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: 修改Agent配置
+      tags:
+      - Agent配置
   /v1/get:
     get:
       consumes:
       - application/json
-      description: 对已经提交的Agent配置进行查询
       parameters:
       - description: 认证密钥
         in: header
@@ -158,6 +191,22 @@ paths:
       - application/json
       responses: {}
       summary: 推送Agent配置
+      tags:
+      - Agent配置
+  /v1/push_host:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 认证密钥
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses: {}
+      summary: 下发指定主机的Agent配置
       tags:
       - Agent配置
 schemes:
