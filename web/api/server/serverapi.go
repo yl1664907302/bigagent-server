@@ -22,6 +22,31 @@ import (
 type ServerApi struct{}
 
 // @Summary 搜索Agent
+// @Description 查询Agent的基本信息
+// @Tags Agent管理
+// @Accept json
+// @Produce json
+// @Router /v1/info [get]
+func (*ServerApi) GetAgentInfo(c *gin.Context) {
+	agentInfos, err := mysqldb.AgentInfoSelectAll(c.Query("page"), c.Query("pageSize"))
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "agent信息查询失败！", err)
+		return
+	}
+	num, err := mysqldb.AgentNum()
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		responses.FailWithAgent(c, "agent信息查询失败！", err)
+		return
+	}
+	responses.SuccssWithDetailedFenye(c, "", map[string]any{
+		"agentInfos": agentInfos,
+		"nums":       num,
+	})
+}
+
+// @Summary 搜索Agent
 // @Description 根据UUID查询Agent并转发请求
 // @Tags Agent管理
 // @Accept json

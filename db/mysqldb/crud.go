@@ -13,6 +13,29 @@ import (
 	"gorm.io/gorm"
 )
 
+func AgentInfoSelectAll(cp string, ps string) ([]model.AgentInfo, error) {
+	var agentInfos []model.AgentInfo
+	// 将字符串参数转换为整数
+	currentPage, err := strconv.Atoi(cp)
+	if err != nil {
+		return nil, err
+	}
+	pageSize, err := strconv.Atoi(ps)
+	if err != nil {
+		return nil, err
+	}
+
+	// 计算偏移量
+	offset := (currentPage - 1) * pageSize
+	// 使用 Limit 和 Offset 进行分页查询
+	err = global.MysqlDataConnect.
+		Where("deleted_at IS NULL").
+		Limit(pageSize).
+		Offset(offset).
+		Find(&agentInfos).Error
+	return agentInfos, err
+}
+
 func AgentNum() (int, error) {
 	var num int64
 	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).Count(&num).Error

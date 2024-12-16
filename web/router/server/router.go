@@ -19,6 +19,7 @@ func (*ServerRouter) Router(r *gin.Engine) {
 	g.GET("/get", ServerApi.GetAgentConfig)
 	g.DELETE("/del", ServerApi.DelAgentConfig)
 	g.PUT("/edit", ServerApi.EditAgentConfig)
+	g.GET("/info", ServerApi.GetAgentInfo)
 	// swagger api docs
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 }
