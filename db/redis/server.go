@@ -3,6 +3,7 @@ package redisdb
 import (
 	"bigagent_server/config/global"
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -65,11 +66,33 @@ func BatchSetAgentAddresses(c context.Context, uuidAddressMap map[string]string)
 	return err
 }
 
+// 如果不需要检查重复，可以使用 SetNX (SET if Not eXists)
 func SetAgentAddresses(c context.Context, uuid string, addr string) error {
 	key := AgentAddressPrefix + uuid
-	err := global.RedisDataConnect.Set(c, key, addr, AgentAddressTTL).Err()
+	err := global.RedisDataConnect.SetEX(c, key, addr, AgentAddressTTL).Err()
 	return err
+}
 
+func UpdateAgentAddress(c context.Context, uuid string, addr string) error {
+	key := AgentAddressPrefix + uuid
+
+	// 1. 先检查 key 是否存在
+	exists, err := global.RedisDataConnect.Exists(c, key).Result()
+	if err != nil {
+		return fmt.Errorf("check key exists error: %w", err)
+	}
+
+	if exists == 0 {
+		return fmt.Errorf("key %s not exists", key)
+	}
+
+	// 2. 更新已存在的 key 的值
+	err = global.RedisDataConnect.Set(c, key, addr, AgentAddressTTL).Err()
+	if err != nil {
+		return fmt.Errorf("update key error: %w", err)
+	}
+
+	return nil
 }
 
 // GetAgentNum 获取agent数量

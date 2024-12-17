@@ -3,11 +3,9 @@ package grpc_server
 import (
 	"bigagent_server/config/global"
 	"bigagent_server/db/mysqldb"
-	redisdb "bigagent_server/db/redis"
 	"bigagent_server/model"
 	"bigagent_server/utils"
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -15,7 +13,7 @@ type GrpcServer struct {
 	UnimplementedPushAgantDataServer
 }
 
-func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessage, error) {
+func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessage, error) {
 	//密钥验证
 	if global.CONF.System.Serct != req.Serct {
 		return &ResponseMessage{
@@ -28,12 +26,6 @@ func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessag
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		panicInfo := recover() //panicInfo是any类型，即传给panic()的参数
-		if panicInfo != nil {
-			fmt.Println(panicInfo)
-		}
-	}()
 	// 查询是否存在agent信息
 	_, err = mysqldb.AgentSelect(req.Uuid)
 	// 不存在就创建
@@ -50,7 +42,6 @@ func (s GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessag
 			CreatedAt:    time.Time{},
 			UpdatedAt:    time.Time{},
 		})
-		go redisdb.SetAgentAddresses(ctx, req.Uuid, host).Error()
 		return &ResponseMessage{
 			Code:    "200",
 			Message: "agent register success ！",

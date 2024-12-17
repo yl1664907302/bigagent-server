@@ -63,7 +63,7 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 	// 创建一个新的http.Client实例
 	client := &http.Client{}
 	// 创建一个新的请求对象，复制原始请求信息
-	req, err := http.NewRequest(c.Request.Method, "http://"+ip+":8010/bigagent/showdata", c.Request.Body)
+	req, err := http.NewRequest(c.Request.Method, "http://"+ip+":8010/"+c.Query("model_name")+"/showdata", c.Request.Body)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 		responses.FailWithAgent(c, "查询失败！", err)
@@ -255,14 +255,14 @@ func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
 		return
 	}
 
-	// 2. 查询配置信息
+	// 查询配置信息
 	config, err := mysqldb.AgentConfigSelect(requestData.ConfigID)
 	if err != nil {
 		responses.FailWithAgent(c, "", "查询配置失败")
 		return
 	}
 
-	// 3. 验证uuid是否有效
+	// 验证uuid是否有效
 	validHosts := make([]string, 0)
 	for _, uuid := range requestData.Uuids {
 		if exists, host := redisdb.CheckAgentExists(c, uuid); exists {

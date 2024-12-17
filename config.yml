@@ -2,7 +2,7 @@ system:
   addr: ":8080"
   grpc: "0.0.0.0:8765"
   logfile: "log.txt"
-  serct: "123456"
+  serct: 123456
   client_port: "0.0.0.0:5678"
   database:
     mysqlhost: "localhost"

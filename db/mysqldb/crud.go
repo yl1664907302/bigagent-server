@@ -289,6 +289,7 @@ func AgentUpdateActiveToDead(t time.Time) ([]model.AgentInfo, error) {
 }
 func AgentRegister(a *model.AgentInfo) error {
 	err := global.MysqlDataConnect.Create(&a).Error
+	err = redisdb.SetAgentAddresses(context.Background(), a.UUID, a.NetIP+":"+a.Grpc_port)
 	return err
 }
 
@@ -297,6 +298,7 @@ func AgentUpdateAllExceptUUID(uuid string, a *model.AgentInfo) error {
 		Where("uuid = ?", uuid).
 		Omit("uuid").Omit("created_at").
 		Updates(a).Error
+	err = redisdb.SetAgentAddresses(context.Background(), a.UUID, a.NetIP+":"+a.Grpc_port)
 	return err
 }
 

@@ -9,9 +9,8 @@ import (
 func init() {
 	inits.Viper()
 	inits.Logger()
-	inits.RedisDB()
 	inits.MysqlDB()
-
+	inits.RedisDB()
 }
 
 // @title BigAgent API
