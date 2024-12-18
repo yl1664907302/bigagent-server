@@ -10,13 +10,13 @@ import (
 	responses "bigagent_server/web/response"
 	"context"
 	"fmt"
+	"github.com/gin-gonic/gin"
+	"github.com/goccy/go-json"
+	"github.com/gorilla/websocket"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	"github.com/gin-gonic/gin"
-	"github.com/goccy/go-json"
 )
 
 type ServerApi struct{}
@@ -44,6 +44,66 @@ func (*ServerApi) GetAgentInfo(c *gin.Context) {
 		"agentInfos": agentInfos,
 		"nums":       num,
 	})
+}
+
+var upGrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+	ReadBufferSize:   1024,
+	WriteBufferSize:  1024,
+	HandshakeTimeout: 5 * time.Second,
+}
+
+func (*ServerApi) GetAgentInfoWS(c *gin.Context) {
+	// 将 HTTP 连接升级为 WebSocket 连接
+	ws, err := upGrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		return
+	}
+	defer ws.Close()
+	// 创建定时器，定期发送数据
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			// 获取 agent 信息
+			agentInfos, err := mysqldb.AgentInfoSelectAll(c.Query("page"), c.Query("pageSize"))
+			if err != nil {
+				logger.DefaultLogger.Error(err)
+				// 发送错误消息
+				ws.WriteJSON(map[string]any{
+					"code": 500,
+					"msg":  "agent信息查询失败",
+				})
+				return
+			}
+			num, err := mysqldb.AgentNum()
+			if err != nil {
+				logger.DefaultLogger.Error(err)
+				ws.WriteJSON(map[string]any{
+					"code": 500,
+					"msg":  "agent数量查询失败",
+				})
+				return
+			}
+			// 发送数据
+			err = ws.WriteJSON(map[string]any{
+				"code": 200,
+				"data": map[string]any{
+					"agentInfos": agentInfos,
+					"nums":       num,
+				},
+			})
+
+			if err != nil {
+				logger.DefaultLogger.Error(err)
+				return
+			}
+		}
+	}
 }
 
 // @Summary 搜索Agent

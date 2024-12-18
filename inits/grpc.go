@@ -10,8 +10,11 @@ import (
 func RunG() {
 	go func() {
 		s := grpc.NewServer()
+
+		// 注册服务端
 		server := &grpc_server.GrpcServer{}
 		grpc_server.RegisterPushAgantDataServer(s, server)
+
 		// 启动服务
 		lis, err := net.Listen("tcp", global.CONF.System.Grpc)
 		if err != nil {

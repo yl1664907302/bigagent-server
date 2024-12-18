@@ -13,6 +13,10 @@ type AgentInfo struct {
 	Status       string    `gorm:"column:status;type:varchar(255);not null" json:"status"`               // 机器当前状态
 	ActionDetail string    `gorm:"column:action_detail;type:varchar(255);not null" json:"action_detail"` // Agent动作描述
 	Grpc_port    string    `gorm:"column:grpc_port;type:varchar(100);not null" json:"grpc_port"`
+	Platform     string    `gorm:"column:platform;type:varchar(100);not null" json:"platform"`
+	Kernel       string    `gorm:"column:kernel;type:varchar(100);not null" json:"kernel"`
+	Machine_type string    `gorm:"column:machine_type;type:varchar(100);not null" json:"machine_type"`
+	Os           string    `gorm:"column:os;type:varchar(100);not null" json:"os"`
 	CreatedAt    time.Time `gorm:"column:created_at;type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`                             // 注册时间
 	UpdatedAt    time.Time `gorm:"column:updated_at;type:timestamp;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"` // 更新时间
 }

@@ -12,6 +12,10 @@ message SmpData {
   string grpc_port = 6;
   string actiondetail = 13;
   string status = 14;
+  string platform = 15;
+  string os = 16;
+  string machine_type = 17;
+  string kernel = 18;
   google.protobuf.Timestamp time = 5;
   SmpCpu cpu = 7;
   map<string,SmpDisk> disk = 8;
@@ -98,4 +102,5 @@ message ResponseMessage {
   string message = 2;
 }
 
-// protoc -I . --go_out=plugins=grpc:. ./server.proto
+// protoc -I . --go_out=plugins=grpc:. grpcs/proto/server.proto
+// protoc -I . --go_out=plugins=grpc:. grpcs\proto\server.proto
