@@ -1,7 +1,7 @@
 package mysqldb
 
 import (
-	"bigagent_server/config/global"
+	conf "bigagent_server/config"
 	redisdb "bigagent_server/db/redis"
 	"bigagent_server/model"
 	"context"
@@ -28,7 +28,7 @@ func AgentInfoSelectAll(cp string, ps string) ([]model.AgentInfo, error) {
 	// 计算偏移量
 	offset := (currentPage - 1) * pageSize
 	// 使用 Limit 和 Offset 进行分页查询
-	err = global.MysqlDataConnect.
+	err = conf.MysqlDataConnect.
 		Where("deleted_at IS NULL").
 		Limit(pageSize).
 		Offset(offset).
@@ -38,14 +38,14 @@ func AgentInfoSelectAll(cp string, ps string) ([]model.AgentInfo, error) {
 
 func AgentNum() (int, error) {
 	var num int64
-	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).Count(&num).Error
+	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).Count(&num).Error
 	return int(num), err
 }
 
 func AgentConfigEdit(configID int, newconfig model.AgentConfigDB) error {
 	// 检查配置是否存在且未被软删除
 	var config model.AgentConfigDB
-	err := global.MysqlDataConnect.Unscoped().
+	err := conf.MysqlDataConnect.Unscoped().
 		Where("id = ?", configID).
 		First(&config).Error
 	if err != nil {
@@ -59,14 +59,14 @@ func AgentConfigEdit(configID int, newconfig model.AgentConfigDB) error {
 	if !config.DeletedAt.Time.IsZero() {
 		return fmt.Errorf("配置已被删除，无法编辑")
 	}
-	err = global.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id = ?", configID).Updates(&newconfig).Error
+	err = conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id = ?", configID).Updates(&newconfig).Error
 	return err
 }
 
 func AgentConfigDel(configID string) error {
 	// 先查询记录是否存在
 	var config model.AgentConfigDB
-	result := global.MysqlDataConnect.First(&config, configID)
+	result := conf.MysqlDataConnect.First(&config, configID)
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return fmt.Errorf("记录不存在: %s", configID)
@@ -75,7 +75,7 @@ func AgentConfigDel(configID string) error {
 	}
 
 	// 执行软删除
-	if err := global.MysqlDataConnect.Delete(&config).Error; err != nil {
+	if err := conf.MysqlDataConnect.Delete(&config).Error; err != nil {
 		return fmt.Errorf("删除失败: %v", err)
 	}
 
@@ -83,13 +83,13 @@ func AgentConfigDel(configID string) error {
 }
 
 func AgentConfigUpdateTimes(config_id int) error {
-	err := global.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id = ?", config_id).Update("times", gorm.Expr("times + ?", 1)).Error
+	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id = ?", config_id).Update("times", gorm.Expr("times + ?", 1)).Error
 	return err
 }
 
 func AgentConfigId() (int, error) {
 	var maxId int
-	err := global.MysqlDataConnect.Model(&model.AgentConfigDB{}).
+	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).
 		Select("COALESCE(MAX(id), 0)").
 		Scan(&maxId).Error
 	return maxId, err
@@ -113,7 +113,7 @@ func AgentConfigSelectAll(cp string, ps string) ([]model.AgentConfigDB, error) {
 	offset := (currentPage - 1) * pageSize
 
 	// 使用 Limit 和 Offset 进行分页查询
-	err = global.MysqlDataConnect.
+	err = conf.MysqlDataConnect.
 		Where("deleted_at IS NULL").
 		Limit(pageSize).
 		Offset(offset).
@@ -152,7 +152,7 @@ func UpdateAgentAddressesToRedis(c context.Context) error {
 		var offset int = 0
 		for {
 			// 分批查询数据
-			rows, err := global.MysqlDataConnect.
+			rows, err := conf.MysqlDataConnect.
 				Table("agent_info").
 				Select("uuid, net_ip", "grpc_port").
 				Limit(batchSize).
@@ -211,14 +211,14 @@ func UpdateAgentAddressesToRedis(c context.Context) error {
 
 func AgentConfigNetNum() (int, error) {
 	var num int64
-	err := global.MysqlDataConnect.Model(&model.AgentConfigDB{}).Count(&num).Error
+	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Count(&num).Error
 	return int(num), err
 }
 
 func AgentConfigNetSelect(num int) ([]string, []string, error) {
 	var agents []model.AgentInfo
 	// 使用 Select 查询多个字段（net_ip 和 uuid）
-	err := global.MysqlDataConnect.
+	err := conf.MysqlDataConnect.
 		Model(&model.AgentInfo{}).
 		Select("net_ip", "uuid"). // 查询 net_ip 和 uuid 字段
 		Limit(num).
@@ -241,24 +241,24 @@ func AgentConfigNetSelect(num int) ([]string, []string, error) {
 
 func AgentConfigSelect(id int) (model.AgentConfigDB, error) {
 	var agentConfigDB model.AgentConfigDB
-	err := global.MysqlDataConnect.Model(model.AgentConfigDB{}).Where("id = ?", id).First(&agentConfigDB).Error
+	err := conf.MysqlDataConnect.Model(model.AgentConfigDB{}).Where("id = ?", id).First(&agentConfigDB).Error
 	return agentConfigDB, err
 }
 
 func AgentConfigCreate(c model.AgentConfigDB) error {
-	err := global.MysqlDataConnect.Create(&c).Error
+	err := conf.MysqlDataConnect.Create(&c).Error
 	return err
 }
 
 func LoginUser(username string, password string) (model.User, error) {
 	var user model.User
-	err := global.MysqlDataConnect.Where("username = ? AND password = ?", username, password).First(&user).Error
+	err := conf.MysqlDataConnect.Where("username = ? AND password = ?", username, password).First(&user).Error
 	return user, err
 }
 
 func AgentNetIPSelectByUuid(uuid string) (string, error) {
 	var agent model.AgentInfo
-	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).Select("net_ip").Where("uuid = ?", uuid).First(&agent).Error
+	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).Select("net_ip").Where("uuid = ?", uuid).First(&agent).Error
 	if err != nil {
 		return "", err
 	}
@@ -267,12 +267,12 @@ func AgentNetIPSelectByUuid(uuid string) (string, error) {
 
 func FindDeadAgents(t time.Time) ([]model.AgentInfo, error) {
 	var agents []model.AgentInfo
-	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Find(&agents).Error
+	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Find(&agents).Error
 	return agents, err
 }
 
 func UpdateDeadAgents(t time.Time) error {
-	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Omit("updated_at").Update("active", 0).Error
+	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Omit("updated_at").Update("active", 0).Error
 	return err
 }
 
@@ -288,13 +288,13 @@ func AgentUpdateActiveToDead(t time.Time) ([]model.AgentInfo, error) {
 	return agents, nil
 }
 func AgentRegister(a *model.AgentInfo) error {
-	err := global.MysqlDataConnect.Create(&a).Error
+	err := conf.MysqlDataConnect.Create(&a).Error
 	err = redisdb.SetAgentAddresses(context.Background(), a.UUID, a.NetIP+":"+a.Grpc_port)
 	return err
 }
 
 func AgentUpdateAllExceptUUID(uuid string, a *model.AgentInfo) error {
-	err := global.MysqlDataConnect.Model(&model.AgentInfo{}).
+	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).
 		Where("uuid = ?", uuid).
 		Omit("uuid").Omit("created_at").
 		Updates(a).Error
@@ -304,7 +304,7 @@ func AgentUpdateAllExceptUUID(uuid string, a *model.AgentInfo) error {
 
 func AgentSelect(uuid string) (*model.AgentInfo, error) {
 	var a model.AgentInfo
-	err := global.MysqlDataConnect.Where("uuid = ?", uuid).First(&a).Error
+	err := conf.MysqlDataConnect.Where("uuid = ?", uuid).First(&a).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, fmt.Errorf("no record found with uuid: %s", uuid)
 	}

@@ -1,7 +1,7 @@
 package inits
 
 import (
-	"bigagent_server/config/global"
+	"bigagent_server/config"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -10,5 +10,5 @@ func RedisDB() {
 	client := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379", // Redis 地址
 	})
-	global.RedisDataConnect = client
+	config.RedisDataConnect = client
 }

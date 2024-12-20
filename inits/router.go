@@ -1,8 +1,8 @@
 package inits
 
 import (
-	"bigagent_server/config/global"
-	"bigagent_server/utils/logger"
+	"bigagent_server/config"
+	"bigagent_server/logger"
 	responses "bigagent_server/web/response"
 	"bigagent_server/web/router"
 	"fmt"
@@ -57,9 +57,9 @@ func AuthMiddleware() gin.HandlerFunc {
 		}
 
 		// 验证密钥
-		if global.CONF.System.Serct != c.Request.Header.Get("Authorization") {
+		if config.CONF.System.Serct != c.Request.Header.Get("Authorization") {
 			logger.DefaultLogger.Error(fmt.Errorf("配置秘钥认证失败！"))
-			responses.FailWithAgent(c, "", "配置秘钥认证失败！")
+			responses.ResponseApp.FailWithAgent(c, "", "配置秘钥认证失败！")
 			c.Abort()
 			return
 		}

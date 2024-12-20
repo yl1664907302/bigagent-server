@@ -2,7 +2,7 @@ package crontab
 
 import (
 	"bigagent_server/db/mysqldb"
-	"bigagent_server/utils/logger"
+	"bigagent_server/logger"
 	"github.com/robfig/cron/v3"
 	"time"
 )

@@ -1,7 +1,7 @@
 package inits
 
 import (
-	"bigagent_server/config/global"
+	"bigagent_server/config"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -19,7 +19,7 @@ func MysqlDB() {
 	if err != nil {
 		log.Print(err)
 	}
-	global.MysqlDataConnect = db
+	config.MysqlDataConnect = db
 }
 
 //func MysqlDB() {

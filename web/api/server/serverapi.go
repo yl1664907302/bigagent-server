@@ -1,112 +1,78 @@
 package server
 
 import (
-	"bigagent_server/config/global"
-	"bigagent_server/db/mysqldb"
+	conf "bigagent_server/config"
 	redisdb "bigagent_server/db/redis"
-	grpc_client "bigagent_server/grpcs/client"
-	"bigagent_server/model"
-	"bigagent_server/utils/logger"
+	"bigagent_server/logger"
+	grpc_client "bigagent_server/web/grpcs/client"
 	responses "bigagent_server/web/response"
+	"bigagent_server/web/services"
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/goccy/go-json"
-	"github.com/gorilla/websocket"
-	"io"
-	"io/ioutil"
-	"net/http"
+	"log"
 	"time"
 )
 
 type ServerApi struct{}
 
-// @Summary 搜索Agent
+// GetAgentInfo @Summary 搜索Agent
 // @Description 查询Agent的基本信息
 // @Tags Agent管理
 // @Accept json
 // @Produce json
 // @Router /v1/info [get]
 func (*ServerApi) GetAgentInfo(c *gin.Context) {
-	agentInfos, err := mysqldb.AgentInfoSelectAll(c.Query("page"), c.Query("pageSize"))
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "agent信息查询失败！", err)
+	info, err := services.AgentServiceImpV1App.GetAgentInfo(c)
+	if Err(c, err, "info") {
 		return
 	}
-	num, err := mysqldb.AgentNum()
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "agent信息查询失败！", err)
+	num, err := services.AgentServiceImpV1App.GetAgentNum(c)
+	if Err(c, err, "info") {
 		return
 	}
-	responses.SuccssWithDetailedFenye(c, "", map[string]any{
-		"agentInfos": agentInfos,
-		"nums":       num,
-	})
+	responses.ResponseApp.SuccssWithAgentInfos(c, info, num)
 }
 
-var upGrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-	ReadBufferSize:   1024,
-	WriteBufferSize:  1024,
-	HandshakeTimeout: 5 * time.Second,
-}
-
-func (*ServerApi) GetAgentInfoWS(c *gin.Context) {
-	// 将 HTTP 连接升级为 WebSocket 连接
-	ws, err := upGrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		return
-	}
-	defer ws.Close()
-	// 创建定时器，定期发送数据
+// GetAgentInfoSSE @Summary sse协议分页查询Agent
+// @Description sse协议分页查询Agent的基本信息
+// @Tags Agent管理
+// @Accept json
+// @Produce json
+// @Router /v1/info_sse [get]
+func (*ServerApi) GetAgentInfoSSE(c *gin.Context) {
+	// 设置 SSE 相关的 headers
+	c.Writer.Header().Set("Content-Type", "text/event-stream")
+	c.Writer.Header().Set("Cache-Control", "no-cache")
+	c.Writer.Header().Set("Connection", "keep-alive")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	// 创建一个 ticker 定期发送数据
 	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
+
+	// 创建一个 channel 用于检测客户端断开连接
+	clientGone := c.Writer.CloseNotify()
+
+	// 首次加载时发送数据
+	if err := sendAgentInfo(c); err != nil {
+		log.Println(err)
+		return
+	}
+
 	for {
 		select {
+		case <-clientGone:
+			return
 		case <-ticker.C:
-			// 获取 agent 信息
-			agentInfos, err := mysqldb.AgentInfoSelectAll(c.Query("page"), c.Query("pageSize"))
-			if err != nil {
-				logger.DefaultLogger.Error(err)
-				// 发送错误消息
-				ws.WriteJSON(map[string]any{
-					"code": 500,
-					"msg":  "agent信息查询失败",
-				})
-				return
-			}
-			num, err := mysqldb.AgentNum()
-			if err != nil {
-				logger.DefaultLogger.Error(err)
-				ws.WriteJSON(map[string]any{
-					"code": 500,
-					"msg":  "agent数量查询失败",
-				})
-				return
-			}
-			// 发送数据
-			err = ws.WriteJSON(map[string]any{
-				"code": 200,
-				"data": map[string]any{
-					"agentInfos": agentInfos,
-					"nums":       num,
-				},
-			})
-
-			if err != nil {
-				logger.DefaultLogger.Error(err)
+			// 定期发送数据
+			if err := sendAgentInfo(c); err != nil {
 				return
 			}
 		}
 	}
 }
 
-// @Summary 搜索Agent
+// SearchAgent @Summary 搜索Agent
 // @Description 根据UUID查询Agent并转发请求
 // @Tags Agent管理
 // @Accept json
@@ -114,66 +80,14 @@ func (*ServerApi) GetAgentInfoWS(c *gin.Context) {
 // @Param uuid query string true "Agent UUID"
 // @Router /bigagent/showdata [get]
 func (*ServerApi) SearchAgent(c *gin.Context) {
-	ip, err := mysqldb.AgentNetIPSelectByUuid(c.Query("uuid"))
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "查询失败！", err)
+	ip, err := services.AgentServiceImpV1App.SearchAgentNet(c)
+	if Err(c, err, "info") {
 		return
 	}
-	// 创建一个新的http.Client实例
-	client := &http.Client{}
-	// 创建一个新的请求对象，复制原始请求信息
-	req, err := http.NewRequest(c.Request.Method, "http://"+ip+":8010/"+c.Query("model_name")+"/showdata", c.Request.Body)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "查询失败！", err)
-		return
-	}
-	// 复制所有请求头
-	for key, values := range c.Request.Header {
-		for _, value := range values {
-			req.Header.Add(key, value)
-		}
-	}
-
-	req.Header.Add("Authorization", global.CONF.System.Serct)
-	// 此处密钥配置会在前端编写完后替换，改为从server的uri获取
-	//req.Header.Add("Authorization", c.Request.Header.Get("Authorization"))
-
-	// 发送请求并获取响应
-	resp, err := client.Do(req)
-
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "查询失败！", err)
-		return
-	}
-
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			logger.DefaultLogger.Error(err)
-		}
-	}(resp.Body)
-
-	// 将响应体内容返回给客户端
-	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-
-	c.Status(resp.StatusCode)
-
-	for key, values := range resp.Header {
-		for _, value := range values {
-			c.Writer.Header().Add(key, value)
-		}
-	}
-
-	_, err = c.Writer.Write(bodyBytes)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-	}
+	sendRedict(c, ip+conf.CONF.System.Agent_port)
 }
 
-// @Summary 添加Agent配置
+// AddAgentConfig @Summary 添加Agent配置
 // @Description 新增Agent的配置信息
 // @Tags Agent配置
 // @Accept json
@@ -182,30 +96,15 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 // @Param config body model.AgentConfigDB true "Agent配置信息"
 // @Router /v1/add [post]
 func (*ServerApi) AddAgentConfig(c *gin.Context) {
-	body, err := c.GetRawData()
+	err := services.AgentServiceImpV1App.AddAgentConfig(c)
 	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "", "新增config失败！")
+		responses.ResponseApp.FailWithAgent(c, "", "添加失败！")
 		return
 	}
-	var configDB model.AgentConfigDB
-	err = json.Unmarshal(body, &configDB)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "", "新增config失败！")
-		return
-	}
-	configDB.Status = "有效"
-	err = mysqldb.AgentConfigCreate(configDB)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "", "新增config失败！")
-		return
-	}
-	responses.SuccssWithAgent(c, "", "新增config成功！")
+	responses.ResponseApp.SuccssWithAgent(c, "", "添加成功！")
 }
 
-// @Summary 推送Agent配置
+// PushAgentConfig @Summary 推送Agent配置
 // @Description 向所有在线Agent推送指定配置
 // @Tags Agent配置
 // @Accept json
@@ -214,42 +113,15 @@ func (*ServerApi) AddAgentConfig(c *gin.Context) {
 // @Param config_id body int true "配置ID"
 // @Router /v1/push [post]
 func (*ServerApi) PushAgentConfig(c *gin.Context) {
+	config, agentAddrs, err := services.AgentServiceImpV1App.GetAgentConfig2Nets(c)
+
+	responses.ResponseApp.SuccssWithDetailed(c, "", "正在下发中，请查看agent状态")
+
+	// 并发推送配置
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-
-	// 1. 获取配置ID并查询配置
-	var requestdata map[string]int
-	if body, err := c.GetRawData(); err != nil {
-		responses.FailWithAgent(c, "", "获取请求数据失败")
-		return
-	} else if err = json.Unmarshal(body, &requestdata); err != nil {
-		responses.FailWithAgent(c, "", "解析请求数据失败")
-		return
-	}
-
-	id := requestdata["config_id"]
-	config, err := mysqldb.AgentConfigSelect(id)
-	if err != nil {
-		responses.FailWithAgent(c, "", "查询配置失败")
-		return
-	}
-
-	// 2. 获取agent地址列表
-	agentAddrs, err := redisdb.ScanAgentAddresses(c)
-	if err != nil || len(agentAddrs) == 0 {
-		if err := mysqldb.UpdateAgentAddressesToRedis(c); err != nil {
-			responses.FailWithAgent(c, "", "更新agent地址失败")
-			return
-		}
-		agentAddrs, _ = redisdb.ScanAgentAddresses(c)
-	}
-
-	responses.SuccssWithDetailed(c, "", "正在下发中，请查看agent状态")
-
-	// 3. 并发推送配置
 	results := make(chan error, len(agentAddrs))
 	semaphore := make(chan struct{}, 10) // 限制并发数为10
-
 	for _, addr := range agentAddrs {
 		semaphore <- struct{}{} // 获取信号量
 		go func(address string) {
@@ -262,7 +134,7 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 			}
 			defer conn.Close()
 
-			if err := grpc_client.GrpcConfigPush(conn, &config, global.CONF.System.Serct); err != nil {
+			if err := grpc_client.GrpcConfigPush(conn, config, conf.CONF.System.Serct); err != nil {
 				results <- fmt.Errorf("推送到agent(%s)失败: %v", address, err)
 				return
 			}
@@ -270,31 +142,30 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 		}(addr)
 	}
 
-	// 4. 收集结果
-	var failedCount int
+	// 收集结果
 	for i := 0; i < len(agentAddrs); i++ {
 		select {
-		case err := <-results:
+		case err = <-results:
 			if err != nil {
-				failedCount++
 				logger.DefaultLogger.Error(err)
 			}
 		case <-ctx.Done():
-			responses.FailWithAgent(c, "", "配置推送超时")
+			//特殊处理
+			responses.ResponseApp.FailWithAgent(c, "", "配置推送超时")
 			return
 		}
 	}
 
-	// 5. 异步更新配置使用次数
+	// 异新更新配置使用次数
 	go func() {
-		err := mysqldb.AgentConfigUpdateTimes(id)
-		if err != nil {
-			logger.DefaultLogger.Error(err)
+		err = services.AgentServiceImpV1App.UpdateAgentConfigTimes(c, config.ID)
+		if Err(c, err, "update") {
+			return
 		}
 	}()
 }
 
-// @Summary 下发指定主机的Agent配置
+// PushAgentConfigByHost @Summary 下发指定主机的Agent配置
 // @Description
 // @Tags Agent配置
 // @Accept json
@@ -302,42 +173,23 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 // @Param Authorization header string true "认证密钥"
 // @Router /v1/push_host [post]
 func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
-	// 1. 获取请求数据
-	var requestData struct {
-		ConfigID int      `json:"config_id"`
-		Uuids    []string `json:"uuids"` // 主机IP列表
-	}
-	if body, err := c.GetRawData(); err != nil {
-		responses.FailWithAgent(c, "", "获取请求数据失败")
-		return
-	} else if err = json.Unmarshal(body, &requestData); err != nil {
-		responses.FailWithAgent(c, "", "解析请求数据失败")
+	config, uuids, err := services.AgentServiceImpV1App.GetAgentConfig2Uuids(c)
+	if Err(c, err, "push") {
 		return
 	}
-
-	// 查询配置信息
-	config, err := mysqldb.AgentConfigSelect(requestData.ConfigID)
-	if err != nil {
-		responses.FailWithAgent(c, "", "查询配置失败")
-		return
-	}
-
 	// 验证uuid是否有效
 	validHosts := make([]string, 0)
-	for _, uuid := range requestData.Uuids {
+	for _, uuid := range uuids {
 		if exists, host := redisdb.CheckAgentExists(c, uuid); exists {
 			validHosts = append(validHosts, host)
 		}
 	}
-
-	if len(validHosts) == 0 {
-		responses.FailWithAgent(c, "", "未找到有效的目标主机")
+	if len(validHosts) == 0 && Err(c, fmt.Errorf(""), "host") {
 		return
 	}
+	responses.ResponseApp.SuccssWithDetailed(c, "", "指定agent，正在更新配置")
 
-	responses.SuccssWithDetailed(c, "", "指定agent，正在更新配置")
-
-	// 4. 并发推送配置
+	// 并发推送配置
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
@@ -356,7 +208,7 @@ func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
 			}
 			defer conn.Close()
 
-			if err := grpc_client.GrpcConfigPush(conn, &config, global.CONF.System.Serct); err != nil {
+			if err = grpc_client.GrpcConfigPush(conn, config, conf.CONF.System.Serct); err != nil {
 				results <- fmt.Errorf("推送到agent(%s)失败: %v", address, err)
 				return
 			}
@@ -364,30 +216,30 @@ func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
 		}(addr)
 	}
 
-	// 5. 收集结果
-	var failedCount int
+	// 收集结果
 	for i := 0; i < len(validHosts); i++ {
 		select {
-		case err := <-results:
+		case err = <-results:
 			if err != nil {
-				failedCount++
 				logger.DefaultLogger.Error(err)
 			}
 		case <-ctx.Done():
-			responses.FailWithAgent(c, "", "配置推送超时")
+			// 特殊处理
+			responses.ResponseApp.FailWithAgent(c, "", "配置推送超时")
 			return
 		}
 	}
 
-	// 6. 异步更新配置使用次数
+	// 异步更新配置使用次数
 	go func() {
-		if err := mysqldb.AgentConfigUpdateTimes(requestData.ConfigID); err != nil {
-			logger.DefaultLogger.Error(err)
+		err = services.AgentServiceImpV1App.UpdateAgentConfigTimes(c, config.ID)
+		if Err(c, err, "update") {
+			return
 		}
 	}()
 }
 
-// @Summary 查询Agent配置
+// GetAgentConfig @Summary 查询Agent配置
 // @Description
 // @Tags Agent配置
 // @Accept json
@@ -395,25 +247,14 @@ func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
 // @Param Authorization header string true "认证密钥"
 // @Router /v1/get [get]
 func (*ServerApi) GetAgentConfig(c *gin.Context) {
-	configs, err := mysqldb.AgentConfigSelectAll(c.Query("page"), c.Query("pageSize"))
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.SuccssWithDetailed(c, "", "查询失败！")
+	configs, num, err := services.AgentServiceImpV1App.GetAgentConfigs2num(c)
+	if Err(c, err, "info") {
 		return
 	}
-	num, err := mysqldb.AgentConfigNetNum()
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "", "查询失败！")
-		return
-	}
-	responses.SuccssWithDetailedFenye(c, "", map[string]any{
-		"configs": configs,
-		"nums":    num,
-	})
+	responses.ResponseApp.SuccssWithAgentConfigsFenye(c, configs, num)
 }
 
-// @Summary 删除Agent配置
+// DelAgentConfig @Summary 删除Agent配置
 // @Description
 // @Tags Agent配置
 // @Accept json
@@ -421,18 +262,15 @@ func (*ServerApi) GetAgentConfig(c *gin.Context) {
 // @Param Authorization header string true "认证密钥"
 // @Router /v1/del [delete]
 func (*ServerApi) DelAgentConfig(c *gin.Context) {
-	id := c.Param("config_id")
-	err := mysqldb.AgentConfigDel(id)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "", "删除失败！")
+	err := services.AgentServiceImpV1App.DelAgentConfig(c)
+	if Err(c, err, "delete") {
 		return
 	}
-	responses.SuccssWithDetailed(c, "", "删除成功！")
+	responses.ResponseApp.SuccssWithDetailed(c, "", "配置删除成功！")
 	return
 }
 
-// @Summary 修改Agent配置
+// EditAgentConfig @Summary 修改Agent配置
 // @Description
 // @Tags Agent配置
 // @Accept json
@@ -440,23 +278,9 @@ func (*ServerApi) DelAgentConfig(c *gin.Context) {
 // @Param Authorization header string true "认证密钥"
 // @Router /v1/edit [put]
 func (*ServerApi) EditAgentConfig(c *gin.Context) {
-	body, err := c.GetRawData()
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "", "编辑config失败:"+err.Error())
+	err := services.AgentServiceImpV1App.EditAgentConfig(c)
+	if Err(c, err, "edit") {
 		return
 	}
-	var configDB model.AgentConfigDB
-	err = json.Unmarshal(body, &configDB)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "", "编辑config失败:"+err.Error())
-	}
-	err = mysqldb.AgentConfigEdit(configDB.ID, configDB)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		responses.FailWithAgent(c, "", "编辑config失败:"+err.Error())
-		return
-	}
-	responses.SuccssWithAgent(c, "", "编辑config成功！")
+	responses.ResponseApp.SuccssWithAgent(c, "", "编辑config成功！")
 }

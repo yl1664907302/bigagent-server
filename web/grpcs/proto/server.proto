@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package grpc_server;
+import "google/protobuf/timestamp.proto";
+option go_package = "./";
+// 定义 StandData 数据结构
+message SmpData {
+  string serct=1;
+  string uuid = 2;
+  string hostname = 3;
+  string ipv4 = 4;
+  string grpc_port = 6;
+  string actiondetail = 13;
+  string status = 14;
+  string platform = 15;
+  string os = 16;
+  string machine_type = 17;
+  string kernel = 18;
+  google.protobuf.Timestamp time = 5;
+  SmpCpu cpu = 7;
+  map<string,SmpDisk> disk = 8;
+  SmpMemory memory = 9;
+  map<string,Win32_SystemDriver>  kmodules =10;
+  map<string,SmpNetInfo>   Smpnet =11;
+  map<string,SmPsInfo>    smpps =12;
+}
+
+// CPU
+message SmpCpu{
+  string name =1;
+  int64  core =2;
+  string usage =3;
+}
+
+// Disk
+message SmpDisk{
+   string path =1;
+   string total =2;
+   string free=3;
+   string used=4;
+   string usedPercent=5;
+   string device=6;
+   string fstype=7;
+   string mountPoint=8;
+}
+
+// Memory
+message SmpMemory{
+  Virtual_memory virtual_memory =1;
+  Swap_memory swap_memory =2;
+}
+
+message Virtual_memory {
+  string total =1;
+  string used =2;
+  string free =3;
+  string usedPercent =4;
+}
+
+message Swap_memory {
+  string total =1;
+  string used =2;
+  string free =3;
+  string usedPercent =4;
+}
+
+// module
+message Win32_SystemDriver{
+  string name =1;
+  string state =2;
+  string startmode =3;
+}
+
+// Net
+message SmpNetInfo{
+  string name =1;
+  int64 mtu =2;
+  string mac =3;
+  string ip =4;
+}
+
+// Ps
+message SmPsInfo{
+  string name =2;
+  string user =3;
+  string pid =1;
+  string cpu_percent =5;
+  string mem_percent =6;
+  string vritual_memory_size=7;
+  string resident_set_size=8;
+  string start_time=9;
+  string cmd=10;
+}
+
+// 定义服务接口
+service PushAgantData {
+  rpc SendData (SmpData) returns (ResponseMessage);
+}
+
+message ResponseMessage {
+  string code =1;
+  string message = 2;
+}
+
+// protoc -I . --go_out=plugins=grpc:. grpcs/proto/server.proto
+// protoc -I . --go_out=plugins=grpc:. grpcs\proto\server.proto

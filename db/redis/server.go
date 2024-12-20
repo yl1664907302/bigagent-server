@@ -1,7 +1,7 @@
 package redisdb
 
 import (
-	"bigagent_server/config/global"
+	"bigagent_server/config"
 	"context"
 	"fmt"
 	"time"
@@ -23,7 +23,7 @@ func ScanAgentAddresses(c context.Context) ([]string, error) {
 		var keys []string
 		var err error
 		// 使用SCAN命令批量扫描key
-		keys, cursor, err = global.RedisDataConnect.Scan(c, cursor, pattern, ScanBatchSize).Result()
+		keys, cursor, err = config.RedisDataConnect.Scan(c, cursor, pattern, ScanBatchSize).Result()
 		if err != nil {
 			return nil, err
 		}
@@ -31,7 +31,7 @@ func ScanAgentAddresses(c context.Context) ([]string, error) {
 		// 如果有找到key，批量获取它们的值
 		if len(keys) > 0 {
 			// 使用MGET批量获取值
-			values, err := global.RedisDataConnect.MGet(c, keys...).Result()
+			values, err := config.RedisDataConnect.MGet(c, keys...).Result()
 			if err != nil {
 				return nil, err
 			}
@@ -55,7 +55,7 @@ func ScanAgentAddresses(c context.Context) ([]string, error) {
 
 // BatchSetAgentAddresses 批量设置agent地址
 func BatchSetAgentAddresses(c context.Context, uuidAddressMap map[string]string) error {
-	pipe := global.RedisDataConnect.Pipeline()
+	pipe := config.RedisDataConnect.Pipeline()
 
 	for uuid, addr := range uuidAddressMap {
 		key := AgentAddressPrefix + uuid
@@ -69,7 +69,7 @@ func BatchSetAgentAddresses(c context.Context, uuidAddressMap map[string]string)
 // 如果不需要检查重复，可以使用 SetNX (SET if Not eXists)
 func SetAgentAddresses(c context.Context, uuid string, addr string) error {
 	key := AgentAddressPrefix + uuid
-	err := global.RedisDataConnect.SetEX(c, key, addr, AgentAddressTTL).Err()
+	err := config.RedisDataConnect.SetEX(c, key, addr, AgentAddressTTL).Err()
 	return err
 }
 
@@ -77,7 +77,7 @@ func UpdateAgentAddress(c context.Context, uuid string, addr string) error {
 	key := AgentAddressPrefix + uuid
 
 	// 1. 先检查 key 是否存在
-	exists, err := global.RedisDataConnect.Exists(c, key).Result()
+	exists, err := config.RedisDataConnect.Exists(c, key).Result()
 	if err != nil {
 		return fmt.Errorf("check key exists error: %w", err)
 	}
@@ -87,7 +87,7 @@ func UpdateAgentAddress(c context.Context, uuid string, addr string) error {
 	}
 
 	// 2. 更新已存在的 key 的值
-	err = global.RedisDataConnect.Set(c, key, addr, AgentAddressTTL).Err()
+	err = config.RedisDataConnect.Set(c, key, addr, AgentAddressTTL).Err()
 	if err != nil {
 		return fmt.Errorf("update key error: %w", err)
 	}
@@ -103,7 +103,7 @@ func GetAgentNum(c context.Context) (int, error) {
 	for {
 		var keys []string
 		var err error
-		keys, cursor, err = global.RedisDataConnect.Scan(c, cursor, pattern, ScanBatchSize).Result()
+		keys, cursor, err = config.RedisDataConnect.Scan(c, cursor, pattern, ScanBatchSize).Result()
 		if err != nil {
 			return 0, err
 		}
@@ -120,7 +120,7 @@ func GetAgentNum(c context.Context) (int, error) {
 
 func CheckAgentExists(ctx context.Context, key string) (bool, string) {
 	// 使用Get命令获取key的值
-	val, err := global.RedisDataConnect.Get(ctx, AgentAddressPrefix+key).Result()
+	val, err := config.RedisDataConnect.Get(ctx, AgentAddressPrefix+key).Result()
 	if err != nil {
 		// 如果key不存在或发生错误，返回false和空字符串
 		return false, ""

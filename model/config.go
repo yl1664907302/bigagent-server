@@ -1,7 +1,7 @@
 package model
 
 import (
-	"bigagent_server/grpcs/grpc_config"
+	"bigagent_server/web/grpcs/grpc_config"
 )
 
 //type AuthDetails interface {

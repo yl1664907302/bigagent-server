@@ -1,5 +1,6 @@
 package strategy
 
+// 此代码暂未使用
 // ApiStrategy 定义api接口策略
 type ApiStrategy interface {
 	Api(key string) (interface{}, error)

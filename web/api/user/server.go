@@ -31,12 +31,12 @@ func (*UserApi) Login(c *gin.Context) {
 	user, err := mysqldb.LoginUser(loginForm.Username, loginForm.Password)
 	if err != nil {
 		log.Print(err)
-		responses.FailWithDetailed(c, "用户登入失败", map[string]any{
+		responses.ResponseApp.FailWithDetailed(c, "用户登入失败", map[string]any{
 			"code": http.StatusInternalServerError,
 		})
 
 	} else {
-		responses.LoginSuccessDetailed(c, "登入成功！", map[string]any{
+		responses.ResponseApp.LoginSuccessDetailed(c, "登入成功！", map[string]any{
 			"username":    user.Username,
 			"role":        user.Role,
 			"roleId":      user.RoleId,

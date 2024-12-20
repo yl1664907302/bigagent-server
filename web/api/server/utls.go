@@ -1,60 +1,77 @@
 package server
 
 import (
-	"bigagent_server/db/mysqldb"
-	redisdb "bigagent_server/db/redis"
-	grpc_client "bigagent_server/grpcs/client"
-	"bigagent_server/model"
-	"context"
-	"fmt"
+	"bigagent_server/logger"
+	responses "bigagent_server/web/response"
+	"bigagent_server/web/services"
 	"github.com/gin-gonic/gin"
+	"io"
+	"io/ioutil"
 )
 
-// 定义推送结果结构
-type PushResult struct {
-	Address string
-	Error   error
+func Err(c *gin.Context, err error, keyword string) bool {
+	if err != nil {
+		logger.DefaultLogger.Error(err) // 记录错误日志
+
+		// 根据错误类型或条件返回不同的响应
+		switch keyword {
+		case "info": // 替换为具体的错误类型
+			responses.ResponseApp.FailWithAgent(c, "查询失败", err)
+		case "edit": // 替换为具体的错误类型
+			responses.ResponseApp.FailWithAgent(c, "编辑失败", err)
+		case "delete": // 替换为具体的错误类型
+			responses.ResponseApp.FailWithAgent(c, "删除失败", err)
+		case "update": // 替换为具体的错误类型
+			responses.ResponseApp.FailWithAgent(c, "更新失败", err)
+		case "push": // 替换为具体的错误类型
+			responses.ResponseApp.FailWithAgent(c, "配置下发败", err)
+		case "host": // 替换为具体的错误类型
+			responses.ResponseApp.FailWithAgent(c, "未找到有效主机", err)
+		case "sse": // 替换为另一个具体的错误类型
+			responses.ResponseApp.FailWithAgentSSE(c, err)
+		default:
+			responses.ResponseApp.FailWithAgent(c, "请求异常", err) // 默认错误处理
+		}
+		return true
+	}
+	return false
 }
 
-// 定义worker函数
-func worker(ctx context.Context, jobs <-chan string, results chan<- PushResult, config *model.AgentConfigDB, secret string) {
-	for addr := range jobs {
-		select {
-		case <-ctx.Done():
-			return
-		default:
-			conn, err := grpc_client.InitClient(addr)
-			if err != nil {
-				results <- PushResult{
-					Address: addr,
-					Error:   fmt.Errorf("连接agent(%s)失败: %v", addr, err),
-				}
-				continue
-			}
-			defer conn.Close()
+// 发送sse数据
+func sendAgentInfo(c *gin.Context) error {
+	// 获取 agent 信息
+	info, err := services.AgentServiceImpV1App.GetAgentInfo(c)
+	if Err(c, err, "sse") {
+		return err
+	}
+	num, err := services.AgentServiceImpV1App.GetAgentNum(c)
+	if Err(c, err, "sse") {
+		return err
+	}
+	responses.ResponseApp.SuccssWithAgentInfosSSE(c, info, num)
+	return nil
+}
 
-			err = grpc_client.GrpcConfigPush(conn, config, secret)
-			results <- PushResult{
-				Address: addr,
-				Error:   err,
-			}
+func sendRedict(c *gin.Context, host string) {
+	resp, err := services.AgentServiceImpV1App.GetAgentRedict(c, host)
+	if Err(c, err, "info") {
+		return
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+		}
+	}(resp.Body)
+
+	// 将响应体内容返回给客户端
+	bodyBytes, _ := ioutil.ReadAll(resp.Body)
+	c.Status(resp.StatusCode)
+
+	for key, values := range resp.Header {
+		for _, value := range values {
+			c.Writer.Header().Add(key, value)
 		}
 	}
-}
-
-// 获取Agent地址列表(带缓存)
-func getAgentAddrs(ctx context.Context, c *gin.Context) ([]string, error) {
-	// 先从Redis获取
-	addrs, err := redisdb.ScanAgentAddresses(c)
-	if err == nil && len(addrs) > 0 {
-		return addrs, nil
-	}
-
-	// Redis获取失败则从MySQL更新缓存
-	if err := mysqldb.UpdateAgentAddressesToRedis(c); err != nil {
-		return nil, fmt.Errorf("更新agent地址缓存失败: %v", err)
-	}
-
-	// 重新从Redis获取
-	return redisdb.ScanAgentAddresses(c)
+	c.Writer.Write(bodyBytes)
 }

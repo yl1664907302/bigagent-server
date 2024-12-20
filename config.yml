@@ -4,6 +4,7 @@ system:
   logfile: "log.txt"
   serct: 123456
   client_port: "0.0.0.0:5678"
+  agent_port: ":8010"
   database:
     mysqlhost: "localhost"
     mysqlport: "3306"

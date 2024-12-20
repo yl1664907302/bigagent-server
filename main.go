@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bigagent_server/config/global"
+	"bigagent_server/config"
 	_ "bigagent_server/docs"
 	"bigagent_server/inits"
 )
@@ -26,5 +26,5 @@ func main() {
 	inits.CronTask()
 	inits.RunG()
 	r := inits.Router()
-	panic(r.Run(global.CONF.System.Addr))
+	panic(r.Run(config.CONF.System.Addr))
 }

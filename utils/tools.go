@@ -3,12 +3,23 @@ package utils
 import (
 	"context"
 	"fmt"
+	"github.com/goccy/go-json"
 	"google.golang.org/grpc/peer"
 	"net"
 	"net/url"
 	"reflect"
 	"strings"
 )
+
+// 辅助函数用于序列化错误信息
+func MarshalError(code int, msg string) string {
+	errorResponse := map[string]any{
+		"code": code,
+		"msg":  msg,
+	}
+	jsonData, _ := json.Marshal(errorResponse)
+	return string(jsonData)
+}
 
 // 获取结构体实例中绑定了json标签的key值
 func GetJSONKeysFromInstance(v interface{}) []string {

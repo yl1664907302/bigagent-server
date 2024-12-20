@@ -1,49 +1,113 @@
 package responses
 
 import (
+	"bigagent_server/logger"
+	"bigagent_server/model"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/goccy/go-json"
 	"net/http"
 )
 
-func SuccssWithAgent(c *gin.Context, msg string, data any) {
+type Response struct {
+}
+
+func (r *Response) FailWithAgentSSE(c *gin.Context, err error) {
+	response := map[string]any{
+		"code":    0,
+		"message": err.Error(),
+		"data":    "",
+	}
+	jsonErrorData, jsonErr := json.Marshal(response)
+	if jsonErr != nil {
+		logger.DefaultLogger.Error(jsonErr)
+		return
+	}
+
+	// 发送 SSE 格式的错误信息
+	fmt.Fprintf(c.Writer, "data: %s\n\n", jsonErrorData)
+
+	// 确保数据立即发送到客户端
+	c.Writer.Flush()
+}
+
+func (r *Response) SuccssWithAgentInfosSSE(c *gin.Context, agentinfos []model.AgentInfo, nums int) {
+	// 构造返回数据
+	response := map[string]any{
+		"code": 0,
+		"data": map[string]any{
+			"agentInfos": agentinfos,
+			"nums":       nums,
+		},
+	}
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		return
+	}
+	// 发送 SSE 格式的数据
+	fmt.Fprintf(c.Writer, "data: %s\n\n", jsonData)
+
+	// 确保数据立即发送到客户端
+	c.Writer.Flush()
+}
+
+func (*Response) SuccssWithAgent(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": data,
 	})
 }
 
-func FailWithAgent(c *gin.Context, msg string, data any) {
-	// 错误的时候要返回错误code
+func (*Response) SuccssWithAgentConfigsFenye(c *gin.Context, configs []model.AgentConfigDB, nums int) {
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": map[string]any{
+			"configs": configs,
+			"nums":    nums,
+		},
+	})
+}
+
+func (*Response) SuccssWithAgentInfos(c *gin.Context, agentinfos []model.AgentInfo, nums int) {
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": map[string]any{
+			"agentinfos": agentinfos,
+			"nums":       nums,
+		},
+	})
+}
+
+func (*Response) FailWithAgent(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusInternalServerError, gin.H{
 		"code": 500,
 		"data": data,
 	})
 }
 
-func SuccssWithDetailed(c *gin.Context, msg string, data any) {
+func (*Response) SuccssWithDetailed(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": data,
 	})
 }
 
-func SuccssWithDetailedFenye(c *gin.Context, msg string, data any) {
+func (*Response) SuccssWithDetailedFenye(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": data,
 	})
 }
 
-func FailWithDetailed(c *gin.Context, msg string, data any) {
-	// 错误的时候要返回错误code
+func (*Response) FailWithDetailed(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
 		"data": data,
 	})
 }
 
-// 前端登入需要data中存在code为0
-func LoginSuccessDetailed(c *gin.Context, msg string, data any) {
+func (*Response) LoginSuccessDetailed(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": msg,
@@ -52,7 +116,7 @@ func LoginSuccessDetailed(c *gin.Context, msg string, data any) {
 	})
 }
 
-func InfoSuccessDetailed(c *gin.Context, msg string, data any) {
+func (*Response) InfoSuccessDetailed(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"message": msg,
@@ -60,7 +124,7 @@ func InfoSuccessDetailed(c *gin.Context, msg string, data any) {
 	})
 }
 
-func GomessageSuccessDetailed(c *gin.Context, msg string, data any) {
+func (*Response) GomessageSuccessDetailed(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
 		"code":    http.StatusOK,
 		"message": msg,
@@ -68,3 +132,5 @@ func GomessageSuccessDetailed(c *gin.Context, msg string, data any) {
 		"error":   "null",
 	})
 }
+
+var ResponseApp = new(Response)
