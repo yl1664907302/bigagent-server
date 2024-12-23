@@ -13,6 +13,16 @@ import (
 
 type AgentServiceImpV1 struct{}
 
+func (s *AgentServiceImpV1) DeleteAgentInfo(c *gin.Context) error {
+	id := c.Param("uuid")
+	err := dao.AgentDelete(id)
+	if err != nil {
+		logger.DefaultLogger.Errorf(err.Error())
+		return err
+	}
+	return nil
+}
+
 func (s *AgentServiceImpV1) GetAgentNumDead2Live(c *gin.Context) (int, int, error) {
 	dnum, anum, err := dao.AgentSelectlive2dead()
 	if err != nil {

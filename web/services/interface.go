@@ -19,4 +19,5 @@ type AgentService interface {
 	GetAgentConfig2Uuids(c *gin.Context) (*model.AgentConfigDB, []string, error)
 	GetAgentRedict(c *gin.Context, host string) (*http.Response, error)
 	UpdateAgentConfigTimes(c *gin.Context, id int) error
+	DeleteAgentInfo(c *gin.Context) error
 }

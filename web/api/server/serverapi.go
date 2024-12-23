@@ -22,6 +22,20 @@ type ServerApi struct{}
 // @Accept json
 // @Produce json
 // @Router /v1/info [get]
+func (*ServerApi) DeleteAgentInfo(c *gin.Context) {
+	err := services.AgentServiceImpV1App.DeleteAgentInfo(c)
+	if Err(c, err, "delete") {
+		return
+	}
+	responses.ResponseApp.SuccssWithAgent(c, "", "删除成功")
+}
+
+// GetAgentInfo @Summary 搜索Agent
+// @Description 查询Agent的基本信息
+// @Tags Agent管理
+// @Accept json
+// @Produce json
+// @Router /v1/info [get]
 func (*ServerApi) GetAgentInfo(c *gin.Context) {
 	info, err := services.AgentServiceImpV1App.GetAgentInfo(c)
 	if Err(c, err, "info") {

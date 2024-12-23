@@ -13,6 +13,21 @@ import (
 	"gorm.io/gorm"
 )
 
+func AgentDelete(uuid string) error {
+	// 先查询记录是否存在
+	var agent model.AgentInfo
+	result := conf.MysqlDataConnect.First(&agent, uuid)
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("agent不存在: %s", uuid)
+		}
+		return fmt.Errorf("查询记录失败: %v", result.Error)
+	}
+
+	err := conf.MysqlDataConnect.Delete(&agent).Error
+	return err
+}
+
 func AgentSelectlive2dead() (int, int, error) {
 	var anum int64
 	var dnum int64
