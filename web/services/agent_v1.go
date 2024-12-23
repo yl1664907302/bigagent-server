@@ -13,6 +13,14 @@ import (
 
 type AgentServiceImpV1 struct{}
 
+func (s *AgentServiceImpV1) GetAgentNumDead2Live(c *gin.Context) (int, int, error) {
+	dnum, anum, err := dao.AgentSelectlive2dead()
+	if err != nil {
+		return 0, 0, err
+	}
+	return dnum, anum, err
+}
+
 func (s *AgentServiceImpV1) GetAgentConfig2Nets(c *gin.Context) (*model.AgentConfigDB, []string, error) {
 	// 获取配置ID并查询配置
 	var requestdata map[string]int
@@ -113,10 +121,21 @@ func (s *AgentServiceImpV1) SearchAgentNet(c *gin.Context) (string, error) {
 }
 
 func (s *AgentServiceImpV1) GetAgentInfo(c *gin.Context) ([]model.AgentInfo, error) {
-	agentInfos, err := dao.AgentInfoSelectAll(c.Query("page"), c.Query("pageSize"))
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		return nil, err
+	var agentInfos []model.AgentInfo
+	if c.Query("type") == "" && c.Query("platform") == "" && c.Query("ip") == "" && c.Query("uuid") == "" {
+		s, err := dao.AgentInfoSelectAll(c.Query("page"), c.Query("pageSize"))
+		agentInfos = s
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+			return nil, err
+		}
+	} else {
+		s, err := dao.AgentInfoSelectByKeys(c.Query("page"), c.Query("pageSize"), c.Query("uuid"), c.Query("ip"), c.Query("type"), c.Query("platform"))
+		agentInfos = s
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+			return nil, err
+		}
 	}
 	return agentInfos, nil
 }

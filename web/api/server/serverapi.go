@@ -97,8 +97,7 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 // @Router /v1/add [post]
 func (*ServerApi) AddAgentConfig(c *gin.Context) {
 	err := services.AgentServiceImpV1App.AddAgentConfig(c)
-	if err != nil {
-		responses.ResponseApp.FailWithAgent(c, "", "添加失败！")
+	if Err(c, err, "add") {
 		return
 	}
 	responses.ResponseApp.SuccssWithAgent(c, "", "添加成功！")

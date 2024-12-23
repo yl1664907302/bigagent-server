@@ -31,13 +31,15 @@ func (r *Response) FailWithAgentSSE(c *gin.Context, err error) {
 	c.Writer.Flush()
 }
 
-func (r *Response) SuccssWithAgentInfosSSE(c *gin.Context, agentinfos []model.AgentInfo, nums int) {
+func (r *Response) SuccssWithAgentInfosSSE(c *gin.Context, agentinfos []model.AgentInfo, dnums int, anums int) {
 	// 构造返回数据
 	response := map[string]any{
 		"code": 0,
 		"data": map[string]any{
 			"agentInfos": agentinfos,
-			"nums":       nums,
+			"nums":       anums + dnums,
+			"dnums":      dnums,
+			"anums":      anums,
 		},
 	}
 	jsonData, err := json.Marshal(response)

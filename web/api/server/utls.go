@@ -15,6 +15,8 @@ func Err(c *gin.Context, err error, keyword string) bool {
 
 		// 根据错误类型或条件返回不同的响应
 		switch keyword {
+		case "add": // 替换为具体的错误类型
+			responses.ResponseApp.FailWithAgent(c, "添加失败", err)
 		case "info": // 替换为具体的错误类型
 			responses.ResponseApp.FailWithAgent(c, "查询失败", err)
 		case "edit": // 替换为具体的错误类型
@@ -44,11 +46,12 @@ func sendAgentInfo(c *gin.Context) error {
 	if Err(c, err, "sse") {
 		return err
 	}
-	num, err := services.AgentServiceImpV1App.GetAgentNum(c)
+
+	dnum, anum, err := services.AgentServiceImpV1App.GetAgentNumDead2Live(c)
 	if Err(c, err, "sse") {
 		return err
 	}
-	responses.ResponseApp.SuccssWithAgentInfosSSE(c, info, num)
+	responses.ResponseApp.SuccssWithAgentInfosSSE(c, info, dnum, anum)
 	return nil
 }
 

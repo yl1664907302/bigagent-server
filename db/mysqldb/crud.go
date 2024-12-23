@@ -13,6 +13,20 @@ import (
 	"gorm.io/gorm"
 )
 
+func AgentSelectlive2dead() (int, int, error) {
+	var anum int64
+	var dnum int64
+	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).Where("active = ?", 0).Count(&dnum).Error
+	if err != nil {
+		return 0, 0, err
+	}
+	err = conf.MysqlDataConnect.Model(&model.AgentInfo{}).Where("active = ?", 1).Count(&anum).Error
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(dnum), int(anum), nil
+}
+
 func AgentInfoSelectAll(cp string, ps string) ([]model.AgentInfo, error) {
 	var agentInfos []model.AgentInfo
 	// 将字符串参数转换为整数
@@ -33,6 +47,47 @@ func AgentInfoSelectAll(cp string, ps string) ([]model.AgentInfo, error) {
 		Limit(pageSize).
 		Offset(offset).
 		Find(&agentInfos).Error
+	return agentInfos, err
+}
+
+func AgentInfoSelectByKeys(cp string, ps string, uuid string, ip string, t string, p string) ([]model.AgentInfo, error) {
+	var agentInfos []model.AgentInfo
+
+	// 将字符串参数转换为整数
+	currentPage, err := strconv.Atoi(cp)
+	if err != nil {
+		return nil, err
+	}
+	pageSize, err := strconv.Atoi(ps)
+	if err != nil {
+		return nil, err
+	}
+
+	// 计算偏移量
+	offset := (currentPage - 1) * pageSize
+
+	// 构建查询
+	query := conf.MysqlDataConnect.Where("deleted_at IS NULL")
+
+	// 动态添加条件
+	if uuid != "" {
+		query = query.Where("uuid = ?", uuid)
+	}
+	if ip != "" {
+		query = query.Where("ipv4_first = ?", ip)
+	}
+	if t != "" {
+		query = query.Where("machine_type = ?", t)
+	}
+	if p != "" {
+		query = query.Where("platform = ?", p)
+	}
+
+	// 执行查询
+	err = query.Limit(pageSize).
+		Offset(offset).
+		Find(&agentInfos).Error
+
 	return agentInfos, err
 }
 
