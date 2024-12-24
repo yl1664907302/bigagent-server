@@ -65,7 +65,7 @@ func AgentInfoSelectAll(cp string, ps string) ([]model.AgentInfo, error) {
 	return agentInfos, err
 }
 
-func AgentInfoSelectByKeys(cp string, ps string, uuid string, ip string, t string, p string) ([]model.AgentInfo, error) {
+func AgentInfoSelectByKeys(cp string, ps string, uuid string, ip string, t string, p string, a string) ([]model.AgentInfo, error) {
 	var agentInfos []model.AgentInfo
 
 	// 将字符串参数转换为整数
@@ -96,6 +96,10 @@ func AgentInfoSelectByKeys(cp string, ps string, uuid string, ip string, t strin
 	}
 	if p != "" {
 		query = query.Where("platform = ?", p)
+	}
+	if a != "" {
+		num, _ := strconv.ParseInt(a, 10, 64)
+		query = query.Where("active= ?", num)
 	}
 
 	// 执行查询

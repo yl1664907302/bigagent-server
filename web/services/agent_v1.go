@@ -132,7 +132,7 @@ func (s *AgentServiceImpV1) SearchAgentNet(c *gin.Context) (string, error) {
 
 func (s *AgentServiceImpV1) GetAgentInfo(c *gin.Context) ([]model.AgentInfo, error) {
 	var agentInfos []model.AgentInfo
-	if c.Query("type") == "" && c.Query("platform") == "" && c.Query("ip") == "" && c.Query("uuid") == "" {
+	if c.Query("type") == "" && c.Query("platform") == "" && c.Query("ip") == "" && c.Query("uuid") == "" && c.Query("active") == "" {
 		s, err := dao.AgentInfoSelectAll(c.Query("page"), c.Query("pageSize"))
 		agentInfos = s
 		if err != nil {
@@ -140,7 +140,7 @@ func (s *AgentServiceImpV1) GetAgentInfo(c *gin.Context) ([]model.AgentInfo, err
 			return nil, err
 		}
 	} else {
-		s, err := dao.AgentInfoSelectByKeys(c.Query("page"), c.Query("pageSize"), c.Query("uuid"), c.Query("ip"), c.Query("type"), c.Query("platform"))
+		s, err := dao.AgentInfoSelectByKeys(c.Query("page"), c.Query("pageSize"), c.Query("uuid"), c.Query("ip"), c.Query("type"), c.Query("platform"), c.Query("active"))
 		agentInfos = s
 		if err != nil {
 			logger.DefaultLogger.Error(err)
