@@ -6,6 +6,7 @@ import (
 	"bigagent_server/model"
 	"bigagent_server/utils"
 	"context"
+	"github.com/goccy/go-json"
 	"time"
 )
 
@@ -30,6 +31,7 @@ func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessa
 	_, err = mysqldb.AgentSelect(req.Uuid)
 	// 不存在就创建
 	if err != nil {
+		marshal, _ := json.Marshal(req.DiskUse)
 		err = mysqldb.AgentRegister(&model.AgentInfo{
 			UUID:         req.Uuid,
 			NetIP:        host,
@@ -43,7 +45,7 @@ func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessa
 			Os:           req.Os,
 			Kernel:       req.Kernel,
 			Arch:         req.Arch,
-			Disk_use:     req.DiskUse,
+			Disk_use:     marshal,
 			Cpu_use:      req.CpuUse,
 			Memory_use:   req.MemoryUse,
 			ActionDetail: req.Actiondetail,
@@ -55,6 +57,7 @@ func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessa
 			Message: "agent register success ！",
 		}, err
 	} else {
+		marshal, _ := json.Marshal(req.DiskUse)
 		err = mysqldb.AgentUpdateAllExceptUUID(req.Uuid, &model.AgentInfo{
 			UUID:         req.Uuid,
 			NetIP:        host,
@@ -68,6 +71,9 @@ func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessa
 			Os:           req.Os,
 			Kernel:       req.Kernel,
 			Arch:         req.Arch,
+			Disk_use:     marshal,
+			Cpu_use:      req.CpuUse,
+			Memory_use:   req.MemoryUse,
 			ActionDetail: req.Actiondetail,
 			UpdatedAt:    time.Time{},
 		})
