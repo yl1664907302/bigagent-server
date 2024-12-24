@@ -16,7 +16,7 @@ message SmpData {
   string os = 16;
   string machine_type = 17;
   string arch = 19;
-  string disk_use = 20;
+  map<string,string> disk_use= 20;
   string memory_use = 21;
   string cpu_use = 22;
   string kernel = 18;
