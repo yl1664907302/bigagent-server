@@ -18,6 +18,9 @@ type AgentInfo struct {
 	Machine_type string    `gorm:"column:machine_type;type:varchar(100);not null" json:"machine_type"`
 	Os           string    `gorm:"column:os;type:varchar(100);not null" json:"os"`
 	Arch         string    `gorm:"column:arch;type:varchar(100);not null" json:"arch"`
+	Disk_use     string    `gorm:"column:disk_use;type:varchar(100);not null" json:"disk_use"`
+	Memory_use   string    `gorm:"column:memory_use;type:varchar(100);not null" json:"memory_use"`
+	Cpu_use      string    `gorm:"column:cpu_use;type:varchar(100);not null" json:"cpu_use"`
 	CreatedAt    time.Time `gorm:"column:created_at;type:timestamp;default:CURRENT_TIMESTAMP" json:"created_at"`                             // 注册时间
 	UpdatedAt    time.Time `gorm:"column:updated_at;type:timestamp;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updated_at"` // 更新时间
 }
