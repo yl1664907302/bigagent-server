@@ -15,6 +15,7 @@ message SmpData {
   string platform = 15;
   string os = 16;
   string machine_type = 17;
+  string arch = 19;
   string kernel = 18;
   google.protobuf.Timestamp time = 5;
   SmpCpu cpu = 7;

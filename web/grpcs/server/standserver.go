@@ -42,6 +42,7 @@ func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessa
 			Machine_type: req.MachineType,
 			Os:           req.Os,
 			Kernel:       req.Kernel,
+			Arch:         req.Arch,
 			ActionDetail: req.Actiondetail,
 			CreatedAt:    time.Time{},
 			UpdatedAt:    time.Time{},
@@ -63,6 +64,7 @@ func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessa
 			Machine_type: req.MachineType,
 			Os:           req.Os,
 			Kernel:       req.Kernel,
+			Arch:         req.Arch,
 			ActionDetail: req.Actiondetail,
 			UpdatedAt:    time.Time{},
 		})

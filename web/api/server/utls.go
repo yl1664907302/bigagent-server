@@ -55,8 +55,8 @@ func sendAgentInfo(c *gin.Context) error {
 	return nil
 }
 
-func sendRedict(c *gin.Context, host string) {
-	resp, err := services.AgentServiceImpV1App.GetAgentRedict(c, host)
+func sendRedict(c *gin.Context, host string, key string) {
+	resp, err := services.AgentServiceImpV1App.GetAgentRedict(c, host, key)
 	if Err(c, err, "info") {
 		return
 	}

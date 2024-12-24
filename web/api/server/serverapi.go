@@ -92,13 +92,28 @@ func (*ServerApi) GetAgentInfoSSE(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param uuid query string true "Agent UUID"
-// @Router /bigagent/showdata [get]
+// @Router /v1/showdata [get]
 func (*ServerApi) SearchAgent(c *gin.Context) {
 	ip, err := services.AgentServiceImpV1App.SearchAgentNet(c)
 	if Err(c, err, "info") {
 		return
 	}
-	sendRedict(c, ip+conf.CONF.System.Agent_port)
+	sendRedict(c, ip+conf.CONF.System.Agent_port, "showdata")
+}
+
+// SearchAgent @Summary 巡检Agent
+// @Description 根据UUID查询Agent巡检数据
+// @Tags Agent管理
+// @Accept json
+// @Produce json
+// @Param uuid query string true "Agent UUID"
+// @Router /v1/showdata [get]
+func (*ServerApi) SearchAgentPatrol(c *gin.Context) {
+	ip, err := services.AgentServiceImpV1App.SearchAgentNet(c)
+	if Err(c, err, "info") {
+		return
+	}
+	sendRedict(c, ip+conf.CONF.System.Agent_port, "patroldata")
 }
 
 // AddAgentConfig @Summary 添加Agent配置

@@ -101,9 +101,9 @@ func (s *AgentServiceImpV1) GetAgentConfigs2num(c *gin.Context) ([]model.AgentCo
 	return configs, num, nil
 }
 
-func (s *AgentServiceImpV1) GetAgentRedict(c *gin.Context, host string) (*http.Response, error) {
+func (s *AgentServiceImpV1) GetAgentRedict(c *gin.Context, host string, key string) (*http.Response, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest(c.Request.Method, "http://"+host+"/"+c.Query("model_name")+"/showdata", c.Request.Body)
+	req, err := http.NewRequest(c.Request.Method, "http://"+host+"/"+c.Query("model_name")+"/"+key, c.Request.Body)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 		return nil, err
