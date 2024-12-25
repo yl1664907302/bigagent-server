@@ -16,6 +16,20 @@ import (
 
 type ServerApi struct{}
 
+// GetAgentNumDead @Summary 搜索离线Agent数量
+// @Description 搜索离线Agent数量
+// @Tags Agent管理
+// @Accept json
+// @Produce json
+// @Router /v1/info [get]
+func (*ServerApi) GetAgentNumDead(c *gin.Context) {
+	dnum, _, err := services.AgentServiceImpV1App.GetAgentNumDead2Live(c)
+	if Err(c, err, "info") {
+		return
+	}
+	responses.ResponseApp.SuccssWithAgent(c, "", dnum)
+}
+
 // GetAgentInfo @Summary 搜索Agent
 // @Description 查询Agent的基本信息
 // @Tags Agent管理
