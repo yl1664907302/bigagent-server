@@ -6,8 +6,10 @@ import (
 	"bigagent_server/model"
 	"bigagent_server/utils"
 	"context"
-	"github.com/goccy/go-json"
 	"time"
+
+	"github.com/goccy/go-json"
+	"google.golang.org/grpc/metadata"
 )
 
 type GrpcServer struct {
@@ -16,10 +18,26 @@ type GrpcServer struct {
 
 func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessage, error) {
 	//密钥验证
-	if config.CONF.System.Serct != req.Serct {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
 		return &ResponseMessage{
-			Code:    "200",
+			Code:    "500",
 			Message: "agent serct is error ！",
+		}, nil
+	}
+	tokens := md["authorization"]
+	validTokenFound := false
+	for _, token := range tokens {
+		// 检查每个token是否是期望的Token
+		if token == "Bearer "+config.CONF.System.Serct {
+			validTokenFound = true
+			break
+		}
+	}
+	if !validTokenFound {
+		return &ResponseMessage{
+			Code:    "500",
+			Message: "Authorization token is missing！",
 		}, nil
 	}
 	// 获取客户端的 IP 地址
