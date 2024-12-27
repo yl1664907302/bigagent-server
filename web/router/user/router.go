@@ -7,7 +7,7 @@ import (
 
 type UserRouter struct{}
 
-func (*UserRouter) Router(r *gin.Engine) {
+func (*UserRouter) Router(r gin.IRouter) {
 	g := r.Group("/v1")
 	UserApi := api.ApiGroupApp.UserApiGroup
 	g.POST("/login", UserApi.Login)

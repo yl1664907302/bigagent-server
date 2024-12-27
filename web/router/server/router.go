@@ -9,7 +9,7 @@ import (
 
 type ServerRouter struct{}
 
-func (*ServerRouter) Router(r *gin.Engine) {
+func (*ServerRouter) Router(r gin.IRouter) {
 	g := r.Group("/v1")
 	ServerApi := api.ApiGroupApp.ServerApiGroup
 	g.GET("/agent_id", ServerApi.SearchAgent)
@@ -24,6 +24,7 @@ func (*ServerRouter) Router(r *gin.Engine) {
 	g.GET("/info", ServerApi.GetAgentInfo)
 	g.GET("/info_sse", ServerApi.GetAgentInfoSSE)
 	g.GET("/get_dead", ServerApi.GetAgentNumDead)
+	g.GET("/get_cofail", ServerApi.GetAgentConfigFail)
 
 	// swagger api docs
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))

@@ -13,6 +13,18 @@ import (
 	"gorm.io/gorm"
 )
 
+func AgentConfigSelectByFail(key string) (int, error) {
+	var fnum int64
+	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).Where("action_detail = ?", "config update failed"+"["+key+"]").Count(&fnum).Error
+	return int(fnum), err
+}
+
+func AgentConfigNewID() (string, error) {
+	var id int64
+	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("deleted_at IS NULL").Select("COALESCE(MAX(id), 0)").Where("times > ?", 0).Scan(&id).Error
+	return fmt.Sprintf("%d", id), err
+}
+
 func AgentDelete(uuid string) error {
 	// 先查询记录是否存在
 	var agent model.AgentInfo
@@ -65,7 +77,7 @@ func AgentInfoSelectAll(cp string, ps string) ([]model.AgentInfo, error) {
 	return agentInfos, err
 }
 
-func AgentInfoSelectByKeys(cp string, ps string, uuid string, ip string, t string, p string, a string) ([]model.AgentInfo, error) {
+func AgentInfoSelectByKeys(cp string, ps string, uuid string, ip string, t string, p string, a string, c string, c_f string) ([]model.AgentInfo, error) {
 	var agentInfos []model.AgentInfo
 
 	// 将字符串参数转换为整数
@@ -101,7 +113,12 @@ func AgentInfoSelectByKeys(cp string, ps string, uuid string, ip string, t strin
 		num, _ := strconv.ParseInt(a, 10, 64)
 		query = query.Where("active= ?", num)
 	}
-
+	if c != "" {
+		query = query.Where("action_detail = ?", c)
+	}
+	if c_f != "" {
+		query = query.Where("action_detail = ?", "config update failed"+"["+c_f+"]")
+	}
 	// 执行查询
 	err = query.Limit(pageSize).
 		Offset(offset).

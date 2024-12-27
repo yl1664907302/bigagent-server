@@ -1,6 +1,7 @@
 package grpcs
 
 import (
+	"bigagent_server/config"
 	"bigagent_server/web/grpcs/client"
 	"errors"
 	"fmt"
@@ -82,7 +83,7 @@ func NewGrpcConnPool(host string, size int) (*GrpcConnPool, error) {
 
 	// 初始化连接
 	for i := 0; i < size; i++ {
-		conn, err := grpc_client.InitClient(host)
+		conn, err := grpc_client.InitClient(host, config.CONF.System.Serct)
 		if err != nil {
 			pool.Close()
 			return nil, fmt.Errorf("初始化连接失败: %v", err)
@@ -110,7 +111,7 @@ func (p *GrpcConnPool) Get() (*grpc.ClientConn, error) {
 	conn := p.conns[p.current]
 	if conn == nil {
 		// 如果连接无效，尝试重新创建
-		newConn, err := grpc_client.InitClient(p.host)
+		newConn, err := grpc_client.InitClient(p.host, config.CONF.System.Serct)
 		if err != nil {
 			return nil, fmt.Errorf("重新创建连接失败: %v", err)
 		}

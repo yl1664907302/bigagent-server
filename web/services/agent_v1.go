@@ -9,9 +9,24 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
 	"net/http"
+	"strconv"
 )
 
 type AgentServiceImpV1 struct{}
+
+func (s *AgentServiceImpV1) GetAgentConfigNEW2Fail(c *gin.Context) (int, int, error) {
+	id, err := dao.AgentConfigNewID()
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		return 0, 0, err
+	}
+	fnum, err := dao.AgentConfigSelectByFail(id)
+	if err != nil {
+		return 0, 0, err
+	}
+	i, err := strconv.Atoi(id)
+	return i, fnum, err
+}
 
 func (s *AgentServiceImpV1) DeleteAgentInfo(c *gin.Context) error {
 	id := c.Param("uuid")
@@ -132,7 +147,7 @@ func (s *AgentServiceImpV1) SearchAgentNet(c *gin.Context) (string, error) {
 
 func (s *AgentServiceImpV1) GetAgentInfo(c *gin.Context) ([]model.AgentInfo, error) {
 	var agentInfos []model.AgentInfo
-	if c.Query("type") == "" && c.Query("platform") == "" && c.Query("ip") == "" && c.Query("uuid") == "" && c.Query("active") == "" {
+	if c.Query("type") == "" && c.Query("platform") == "" && c.Query("ip") == "" && c.Query("uuid") == "" && c.Query("active") == "" && c.Query("c_desc") == "" && c.Query("c_desc_f") == "" {
 		s, err := dao.AgentInfoSelectAll(c.Query("page"), c.Query("pageSize"))
 		agentInfos = s
 		if err != nil {
@@ -140,7 +155,7 @@ func (s *AgentServiceImpV1) GetAgentInfo(c *gin.Context) ([]model.AgentInfo, err
 			return nil, err
 		}
 	} else {
-		s, err := dao.AgentInfoSelectByKeys(c.Query("page"), c.Query("pageSize"), c.Query("uuid"), c.Query("ip"), c.Query("type"), c.Query("platform"), c.Query("active"))
+		s, err := dao.AgentInfoSelectByKeys(c.Query("page"), c.Query("pageSize"), c.Query("uuid"), c.Query("ip"), c.Query("type"), c.Query("platform"), c.Query("active"), c.Query("c_desc"), c.Query("c_desc_f"))
 		agentInfos = s
 		if err != nil {
 			logger.DefaultLogger.Error(err)

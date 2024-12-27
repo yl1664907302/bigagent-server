@@ -16,6 +16,20 @@ import (
 
 type ServerApi struct{}
 
+// GetAgentConfigFail @Summary 搜索最近发布的的Agent配置中失败数量
+// @Description 搜索离线Agent数量
+// @Tags Agent管理
+// @Accept json
+// @Produce json
+// @Router /v1/info [get]
+func (*ServerApi) GetAgentConfigFail(c *gin.Context) {
+	id, fnum, err := services.AgentServiceImpV1App.GetAgentConfigNEW2Fail(c)
+	if Err(c, err, "info") {
+		return
+	}
+	responses.ResponseApp.SuccssWithAgentConfigsFail(c, id, fnum)
+}
+
 // GetAgentNumDead @Summary 搜索离线Agent数量
 // @Description 搜索离线Agent数量
 // @Tags Agent管理
@@ -30,7 +44,7 @@ func (*ServerApi) GetAgentNumDead(c *gin.Context) {
 	responses.ResponseApp.SuccssWithAgent(c, "", dnum)
 }
 
-// GetAgentInfo @Summary 搜索Agent
+// DeleteAgentInfo  @Summary 删除Agent
 // @Description 查询Agent的基本信息
 // @Tags Agent管理
 // @Accept json
@@ -106,7 +120,7 @@ func (*ServerApi) GetAgentInfoSSE(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param uuid query string true "Agent UUID"
-// @Router /v1/showdata [get]
+// @Router /v1/agent_id[get]
 func (*ServerApi) SearchAgent(c *gin.Context) {
 	ip, err := services.AgentServiceImpV1App.SearchAgentNet(c)
 	if Err(c, err, "info") {
@@ -115,13 +129,13 @@ func (*ServerApi) SearchAgent(c *gin.Context) {
 	sendRedict(c, ip+conf.CONF.System.Agent_port, "showdata")
 }
 
-// SearchAgent @Summary 巡检Agent
+// SearchAgentPatrol  @Summary 巡检Agent
 // @Description 根据UUID查询Agent巡检数据
 // @Tags Agent管理
 // @Accept json
 // @Produce json
 // @Param uuid query string true "Agent UUID"
-// @Router /v1/showdata [get]
+// @Router /v1/agent_patrol[get]
 func (*ServerApi) SearchAgentPatrol(c *gin.Context) {
 	ip, err := services.AgentServiceImpV1App.SearchAgentNet(c)
 	if Err(c, err, "info") {
@@ -169,7 +183,7 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 		go func(address string) {
 			defer func() { <-semaphore }() // 释放信号量
 
-			conn, err := grpc_client.InitClient(address)
+			conn, err := grpc_client.InitClient(address, conf.CONF.System.Serct)
 			if err != nil {
 				results <- fmt.Errorf("连接agent(%s)失败: %v", address, err)
 				return
@@ -243,7 +257,7 @@ func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
 		go func(address string) {
 			defer func() { <-semaphore }()
 
-			conn, err := grpc_client.InitClient(address)
+			conn, err := grpc_client.InitClient(address, conf.CONF.System.Serct)
 			if err != nil {
 				results <- fmt.Errorf("连接agent(%s)失败: %v", address, err)
 				return

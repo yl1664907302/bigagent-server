@@ -20,4 +20,5 @@ type AgentService interface {
 	GetAgentRedict(c *gin.Context, host string, key string) (*http.Response, error)
 	UpdateAgentConfigTimes(c *gin.Context, id int) error
 	DeleteAgentInfo(c *gin.Context) error
+	GetAgentConfigNEW2Fail(c *gin.Context) (int, int, error)
 }

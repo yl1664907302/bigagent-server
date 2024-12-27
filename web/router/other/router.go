@@ -11,7 +11,7 @@ type OtherRouter struct {
 	S *strategy.CmdbServe
 }
 
-func (*OtherRouter) Router(path string, r *gin.Engine) {
+func (*OtherRouter) Router(path string, r gin.IRouter) {
 	g := r.Group("/" + path)
 	OtherApi := api.ApiGroupApp.OtherApiGroup
 	g.GET("/showdata", OtherApi.Showdata)

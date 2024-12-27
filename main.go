@@ -1,9 +1,11 @@
 package main
 
 import (
-	"bigagent_server/config"
 	_ "bigagent_server/docs"
 	"bigagent_server/inits"
+	"context"
+	"os/signal"
+	"syscall"
 )
 
 func init() {
@@ -23,8 +25,8 @@ func init() {
 // @in header
 // @name Authorization
 func main() {
+	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	inits.CronTask()
 	inits.RunG()
-	r := inits.Router()
-	panic(r.Run(config.CONF.System.Addr))
+	inits.Run(ctx, inits.Router)
 }

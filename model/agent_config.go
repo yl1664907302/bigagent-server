@@ -6,17 +6,18 @@ import (
 )
 
 type AgentConfigDB struct {
-	ID        int    `gorm:"type:int(11);primary_key;not null;comment:'配置唯一标识符'" json:"id"`
-	Title     string `gorm:"type:varchar(255);not null;comment:'配置标题'" json:"title"`
-	Status    string `gorm:"type:varchar(15);not null;comment:'配置状态'" json:"status"`
-	Times     string `gorm:"type:varchar(15);not null;comment:'下发次数'" json:"times"`
-	RoleName  string `gorm:"type:varchar(255);not null;comment:'操作角色'" json:"role_name"`
-	Details   string `gorm:"type:varchar(255);not null;comment:'备注'" json:"details"`
-	Ranges    string `gorm:"type:varchar(255);not null;comment:'操作范围'" json:"ranges"`
-	Slot_Name string `gorm:"column:solt_name;type:varchar(100);not null" json:"slot_name"`
-	AuthName  string `gorm:"type:varchar(255);not null;comment:'授鉴类型'"json:"auth_name"`
-	DataName  string `gorm:"type:varchar(255);not null;comment:'数据类型'"json:"data_name"`
-
+	ID                   int    `gorm:"type:int(11);primary_key;not null;comment:'配置唯一标识符'" json:"id"`
+	Title                string `gorm:"type:varchar(255);not null;comment:'配置标题'" json:"title"`
+	Status               string `gorm:"type:varchar(15);not null;comment:'配置状态'" json:"status"`
+	Times                int    `gorm:"type:int(11);not null;comment:'下发次数'" json:"times"`
+	RoleName             string `gorm:"type:varchar(255);not null;comment:'操作角色'" json:"role_name"`
+	Details              string `gorm:"type:varchar(255);not null;comment:'备注'" json:"details"`
+	Ranges               string `gorm:"type:varchar(255);not null;comment:'操作范围'" json:"ranges"`
+	Slot_Name            string `gorm:"column:solt_name;type:varchar(100);not null" json:"slot_name"`
+	AuthName             string `gorm:"type:varchar(255);not null;comment:'授鉴类型'"json:"auth_name"`
+	DataName             string `gorm:"type:varchar(255);not null;comment:'数据类型'"json:"data_name"`
+	Collection_frequency string `gorm:"type:varchar(100);not null;comment:'采集频率'"json:"collection_frequency"`
+	//下面为网络信息
 	Protocol string `gorm:"type:varchar(255);not null;comment:'网络协议'"json:"protocol"` // 网络协议，如http或https
 	Host     string `gorm:"type:varchar(255);not null;comment:'主机信息'"json:"host"`     // 主机地址
 	Port     int    `gorm:"type:varchar(255);not null;comment:'端口信息'"json:"port"`     // 端口号

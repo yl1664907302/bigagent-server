@@ -71,6 +71,16 @@ func (*Response) SuccssWithAgentConfigsFenye(c *gin.Context, configs []model.Age
 	})
 }
 
+func (*Response) SuccssWithAgentConfigsFail(c *gin.Context, id int, fnum int) {
+	c.JSON(http.StatusOK, gin.H{
+		"code": 0,
+		"data": map[string]any{
+			"id":   id,
+			"fnum": fnum,
+		},
+	})
+}
+
 func (*Response) SuccssWithAgentInfos(c *gin.Context, agentinfos []model.AgentInfo, nums int) {
 	c.JSON(http.StatusOK, gin.H{
 		"code": 0,
