@@ -1,10 +1,10 @@
 package inits
 
 import (
-	"bigagent_server/config"
-	"bigagent_server/logger"
-	responses "bigagent_server/web/response"
-	"bigagent_server/web/router"
+	"bigagent_server/internel/config"
+	"bigagent_server/internel/logger"
+	"bigagent_server/internel/web/response"
+	"bigagent_server/internel/web/router"
 	"context"
 	"fmt"
 	"net/http"

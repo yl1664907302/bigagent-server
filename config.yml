@@ -5,6 +5,8 @@ system:
   serct: 123456
   client_port: "0.0.0.0:5678"
   agent_port: ":8010"
+  times: "10s"
+  agent_outtime: 20
   database:
     mysqlhost: "localhost"
     mysqlport: "3306"

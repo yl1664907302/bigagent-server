@@ -1,8 +1,8 @@
 package inits
 
 import (
-	"bigagent_server/config"
-	grpc_server2 "bigagent_server/web/grpcs/server"
+	"bigagent_server/internel/config"
+	"bigagent_server/internel/web/grpcs/server"
 	"google.golang.org/grpc"
 	"net"
 )
@@ -12,8 +12,8 @@ func RunG() {
 		s := grpc.NewServer()
 
 		// 注册服务端
-		server := &grpc_server2.GrpcServer{}
-		grpc_server2.RegisterPushAgantDataServer(s, server)
+		server := &grpc_server.GrpcServer{}
+		grpc_server.RegisterPushAgantDataServer(s, server)
 
 		// 启动服务
 		lis, err := net.Listen("tcp", config.CONF.System.Grpc)

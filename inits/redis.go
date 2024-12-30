@@ -1,7 +1,7 @@
 package inits
 
 import (
-	"bigagent_server/config"
+	"bigagent_server/internel/config"
 	"github.com/go-redis/redis/v8"
 )
 

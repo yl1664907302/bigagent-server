@@ -1,8 +1,8 @@
 package inits
 
 import (
-	"bigagent_server/config"
-	"bigagent_server/logger"
+	"bigagent_server/internel/config"
+	"bigagent_server/internel/logger"
 )
 
 func Logger() {

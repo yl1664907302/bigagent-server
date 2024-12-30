@@ -1,7 +1,7 @@
 package inits
 
 import (
-	"bigagent_server/config"
+	"bigagent_server/internel/config"
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"

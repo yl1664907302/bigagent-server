@@ -1,6 +1,8 @@
 package inits
 
-import "bigagent_server/utils/crontab"
+import (
+	"bigagent_server/internel/utils/crontab"
+)
 
 func CronTask() {
 	crontab.ScrapeCrontab()
