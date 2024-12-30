@@ -11,4 +11,5 @@ func (*UserRouter) Router(r gin.IRouter) {
 	g := r.Group("/v1")
 	UserApi := api.ApiGroupApp.UserApiGroup
 	g.POST("/login", UserApi.Login)
+	g.GET("/loginOut", UserApi.LoginOut)
 }

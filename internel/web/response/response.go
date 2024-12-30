@@ -1,6 +1,7 @@
 package responses
 
 import (
+	"bigagent_server/internel/config"
 	"bigagent_server/internel/logger"
 	"bigagent_server/internel/model"
 	"fmt"
@@ -124,7 +125,16 @@ func (*Response) LoginSuccessDetailed(c *gin.Context, msg string, data any) {
 		"code":    0,
 		"message": msg,
 		"data":    data,
-		"token":   "123456",
+		"token":   config.CONF.System.Serct,
+	})
+}
+
+func (*Response) LoginOutSuccessDetailed(c *gin.Context, msg string, data any) {
+	c.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": msg,
+		"data":    data,
+		"token":   config.CONF.System.Serct,
 	})
 }
 

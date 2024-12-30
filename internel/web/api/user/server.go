@@ -44,5 +44,15 @@ func (*UserApi) Login(c *gin.Context) {
 		})
 
 	}
+}
 
+// LoginOut godoc
+// @Summary 用户登录退出接口
+// @Description 处理用户登录请求
+// @Tags 用户管理
+// @Accept json
+// @Produce json
+// @Router /v1/loginOut [get]
+func (*UserApi) LoginOut(c *gin.Context) {
+	responses.ResponseApp.LoginOutSuccessDetailed(c, "登出成功", "")
 }
