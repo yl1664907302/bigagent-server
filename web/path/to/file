@@ -1,0 +1,56 @@
+package model
+
+import (
+	"strconv"
+
+	"github.com/jinzhu/gorm"
+)
+
+type AgentInfo struct {
+	gorm.Model
+	Uuid     string `gorm:"column:uuid"`
+	NetIp    string `gorm:"column:net_ip"`
+	Type     string `gorm:"column:type"`
+	Platform string `gorm:"column:platform"`
+}
+
+func AgentInfoSelectByKeys(cp string, ps string, uuid string, ip string, t string, p string) ([]AgentInfo, error) {
+	var agentInfos []AgentInfo
+
+	// 将字符串参数转换为整数
+	currentPage, err := strconv.Atoi(cp)
+	if err != nil {
+		return nil, err
+	}
+	pageSize, err := strconv.Atoi(ps)
+	if err != nil {
+		return nil, err
+	}
+
+	// 计算偏移量
+	offset := (currentPage - 1) * pageSize
+
+	// 构建查询
+	query := conf.MysqlDataConnect.Where("deleted_at IS NULL")
+
+	// 动态添加条件
+	if uuid != "" {
+		query = query.Where("uuid = ?", uuid)
+	}
+	if ip != "" {
+		query = query.Where("net_ip = ?", ip)
+	}
+	if t != "" {
+		query = query.Where("type = ?", t)
+	}
+	if p != "" {
+		query = query.Where("platform = ?", p)
+	}
+
+	// 执行查询
+	err = query.Limit(pageSize).
+		Offset(offset).
+		Find(&agentInfos).Error
+
+	return agentInfos, err
+}
