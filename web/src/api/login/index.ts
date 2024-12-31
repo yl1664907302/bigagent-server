@@ -1,28 +1,5 @@
 import request from '@/axios'
-import type {
-  DelRecevier,
-  DelRecevier_response,
-  SelectMarkDownByStatus,
-  SelectMarkDownByStatus_response,
-  SelectReceivers_response,
-  StepsFormType,
-  StepsFormType_response,
-  UserType,
-  SelectMarkDownByStatus2Time_response,
-  SelectMarkDownByStatus2Time,
-  CreateRobot,
-  CreateRobot_response,
-  SelectRobot,
-  SelectRobot_response,
-  DelRobot,
-  DelRobot_response,
-  Updatemarkdowntemplate,
-  Updatemarkdowntemplate_response,
-  Selectmarkdowntemplate,
-  Selectmarkdowntemplate_response,
-  UpdateRobot,
-  UpdateRobot_response
-} from './types'
+import type { UserType } from './types'
 
 interface RoleParams {
   roleName: string
