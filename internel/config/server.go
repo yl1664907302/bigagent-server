@@ -11,6 +11,8 @@ type System struct {
 	Serct         string   `json:"serct"yaml:"serct"`
 	Database      Database `json:"database" yaml:"database"`
 	Redisaddr     string   `json:"redisaddr" yaml:"redisaddr"`
+	Redispassword string   `json:"redispassword" yaml:"redispassword"`
+	Redisdb       int      `json:"redisdb" yaml:"redisdb"`
 	Agent_port    string   `json:"agent_port"yaml:"agent_port"`
 	Times         string   `json:"times" yaml:"times"`
 	Agent_outtime int      `json:"agent_outtime" yaml:"agent_outtime"`

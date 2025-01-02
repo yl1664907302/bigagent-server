@@ -24,3 +24,5 @@ system:
     mysqldatabasename: "bigagent"
   # redis数据库
   redisaddr: "localhost:6379"
+  redispassword: "166490"
+  redisdb: 0
