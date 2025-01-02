@@ -10,11 +10,11 @@ import (
 
 func MysqlDB() {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
-		"root",
-		"123456",
-		"127.0.0.1",
-		3306,
-		"bigagent")
+		config.CONF.System.Database.MysqlUser,
+		config.CONF.System.Database.MysqlPassword,
+		config.CONF.System.Database.MysqlHost,
+		config.CONF.System.Database.MysqlPort,
+		config.CONF.System.Database.MysqlDatabasename)
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Print(err)

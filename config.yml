@@ -1,16 +1,26 @@
 system:
+  # http端口
   addr: ":8080"
+  # grpc服务端端口
   grpc: "0.0.0.0:8765"
+  # 日志文件
   logfile: "log.txt"
+  # 密钥
   serct: 123456
+  # grpc客户端端地址
   client_port: "0.0.0.0:5678"
+  # agent端口
   agent_port: ":8010"
+  # 查询agent离线时间间隔
   times: "10s"
+  # 判断agent离线超时时间
   agent_outtime: 20
+  # mysql数据库
   database:
     mysqlhost: "localhost"
     mysqlport: "3306"
     mysqluser: "root"
-    mysqlpassword: "166490"
+    mysqlpassword: "123456"
     mysqldatabasename: "bigagent"
+  # redis数据库
   redisaddr: "localhost:6379"

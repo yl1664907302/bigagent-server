@@ -8,7 +8,7 @@ import (
 func RedisDB() {
 	// Redis 客户端
 	client := redis.NewClient(&redis.Options{
-		Addr: "localhost:6379", // Redis 地址
+		Addr: config.CONF.System.Redisaddr, // Redis 地址
 	})
 	config.RedisDataConnect = client
 }
