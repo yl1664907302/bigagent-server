@@ -20,11 +20,13 @@ source  bigagent.sql
 ```
 
 # agent端
-> agent使用教程，请先部署并运行agent端
+> agent使用教程，请先部署并运行agent端 \
+> 地址：https://gitee.com/yl166490/bigagentt
 >
 
 ## Build
 ```shell
+git clone https://gitee.com/yl166490/bigagentt.git
 go mod tidy
 ```
 
