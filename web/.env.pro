@@ -2,7 +2,7 @@
 VITE_NODE_ENV=production
 
 # 接口前缀
-VITE_API_BASE_PATH='http://192.168.12.108:8080'
+VITE_API_BASE_PATH='http://192.168.0.83:8080'
 
 # 打包路径
 VITE_BASE_PATH=/agent/

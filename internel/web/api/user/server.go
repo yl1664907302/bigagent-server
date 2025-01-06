@@ -4,7 +4,6 @@ import (
 	"bigagent_server/internel/db/mysqldb"
 	"bigagent_server/internel/model"
 	"bigagent_server/internel/web/response"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -30,10 +29,7 @@ func (*UserApi) Login(c *gin.Context) {
 	}
 	user, err := mysqldb.LoginUser(loginForm.Username, loginForm.Password)
 	if err != nil {
-		log.Print(err)
-		responses.ResponseApp.FailWithDetailed(c, "用户登入失败", map[string]any{
-			"code": http.StatusInternalServerError,
-		})
+		responses.ResponseApp.LoginFailWithDetailed(c, "用户名或密码错误", "")
 
 	} else {
 		responses.ResponseApp.LoginSuccessDetailed(c, "登入成功！", map[string]any{

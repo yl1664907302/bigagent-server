@@ -2,7 +2,9 @@ package inits
 
 import (
 	"bigagent_server/internel/config"
+	"bigagent_server/internel/logger"
 	"github.com/go-redis/redis/v8"
+	"golang.org/x/net/context"
 )
 
 func RedisDB() {
@@ -13,4 +15,9 @@ func RedisDB() {
 		DB:       config.CONF.System.Redisdb,       // 选择数据库
 	})
 	config.RedisDataConnect = client
+	err := client.Ping(context.Background()).Err()
+	if err != nil {
+		logger.DefaultLogger.Errorf("redis连接失败: %v", err)
+		panic(err)
+	}
 }

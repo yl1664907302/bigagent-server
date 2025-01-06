@@ -527,7 +527,7 @@ const isRowSelectable = (row: AgentInfo) => {
 const initSSE = () => {
   const controller = new AbortController()
   fetchEventSource(
-    'http://127.0.0.1:8080/v1/info_sse?page=' +
+      import.meta.env.VITE_API_BASE_PATH+'/v1/info_sse?page=' +
       pagination.currentPage +
       '&pageSize=' +
       pagination.pageSize +

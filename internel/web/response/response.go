@@ -115,8 +115,16 @@ func (*Response) SuccssWithDetailedFenye(c *gin.Context, msg string, data any) {
 
 func (*Response) FailWithDetailed(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
+		"code": 500,
 		"data": data,
+	})
+}
+
+func (*Response) LoginFailWithDetailed(c *gin.Context, msg string, data any) {
+	c.JSON(http.StatusOK, gin.H{
+		"code":    500,
+		"message": msg,
+		"data":    data,
 	})
 }
 

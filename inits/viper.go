@@ -8,7 +8,7 @@ import (
 
 func Viper() {
 	v := viper.New()
-	v.SetConfigFile("config.yml")
+	v.SetConfigFile("conf/config.yml")
 	v.SetConfigType("yaml")
 	err := v.ReadInConfig()
 	if err != nil {

@@ -169,10 +169,8 @@ func (*ServerApi) AddAgentConfig(c *gin.Context) {
 // @Param config_id body int true "配置ID"
 // @Router /v1/push [post]
 func (*ServerApi) PushAgentConfig(c *gin.Context) {
-	config, agentAddrs, err := services.AgentServiceImpV1App.GetAgentConfig2Nets(c)
-
 	responses.ResponseApp.SuccssWithDetailed(c, "", "正在下发中，请查看agent状态")
-
+	config, agentAddrs, err := services.AgentServiceImpV1App.GetAgentConfig2Nets(c)
 	// 并发推送配置
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -211,14 +209,11 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 			return
 		}
 	}
-
 	// 异新更新配置使用次数
-	go func() {
-		err = services.AgentServiceImpV1App.UpdateAgentConfigTimes(c, config.ID)
-		if Err(c, err, "update") {
-			return
-		}
-	}()
+	err = services.AgentServiceImpV1App.UpdateAgentConfigTimes(c, config.ID)
+	if Err(c, err, "update") {
+		return
+	}
 }
 
 // PushAgentConfigByHost @Summary 下发指定主机的Agent配置

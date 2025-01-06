@@ -4,7 +4,6 @@ import (
 	"bigagent_server/internel/config"
 	"bigagent_server/internel/db/mysqldb"
 	"bigagent_server/internel/model"
-	"bigagent_server/internel/utils"
 	"context"
 	"time"
 
@@ -40,19 +39,19 @@ func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessa
 			Message: "Authorization token is missing！",
 		}, nil
 	}
-	// 获取客户端的 IP 地址
-	host, err := utils.GetIPToCtx(ctx)
-	if err != nil {
-		return nil, err
-	}
+	// 获取客户端的 IP 地址(暂时使用ipv4首地址作为网络通信地址)
+	//host, err := utils.GetIPToCtx(ctx)
+	//if err != nil {
+	//	return nil, err
+	//}
 	// 查询是否存在agent信息
-	_, err = mysqldb.AgentSelect(req.Uuid)
+	_, err := mysqldb.AgentSelect(req.Uuid)
 	// 不存在就创建
 	if err != nil {
 		marshal, _ := json.Marshal(req.DiskUse)
 		err = mysqldb.AgentRegister(&model.AgentInfo{
 			UUID:         req.Uuid,
-			NetIP:        host,
+			NetIP:        req.Ipv4,
 			Hostname:     req.Hostname,
 			IPv4First:    req.Ipv4,
 			Active:       1,
@@ -78,7 +77,7 @@ func (s *GrpcServer) SendData(ctx context.Context, req *SmpData) (*ResponseMessa
 		marshal, _ := json.Marshal(req.DiskUse)
 		err = mysqldb.AgentUpdateAllExceptUUID(req.Uuid, &model.AgentInfo{
 			UUID:         req.Uuid,
-			NetIP:        host,
+			NetIP:        req.Ipv4,
 			Hostname:     req.Hostname,
 			IPv4First:    req.Ipv4,
 			Active:       1,

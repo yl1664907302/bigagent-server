@@ -1,6 +1,6 @@
 system:
   # http端口
-  addr: ":8080"
+  addr: "0.0.0.0:8080"
   # grpc服务端端口
   grpc: "0.0.0.0:8765"
   # 日志文件
@@ -17,12 +17,12 @@ system:
   agent_outtime: 20
   # mysql数据库
   database:
-    mysqlhost: "localhost"
+    mysqlhost: "192.168.0.83"
     mysqlport: "3306"
     mysqluser: "root"
     mysqlpassword: "123456"
     mysqldatabasename: "bigagent"
   # redis数据库
-  redisaddr: "localhost:6379"
+  redisaddr: "redis-18340.c256.us-east-1-2.ec2.redns.redis-cloud.com:18340"
   redispassword: "166490"
   redisdb: 0
