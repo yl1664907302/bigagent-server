@@ -144,6 +144,18 @@ func (*ServerApi) SearchAgentPatrol(c *gin.Context) {
 	sendRedict(c, ip+conf.CONF.System.Agent_port, "patroldata")
 }
 
+// AddAgentConfig @Summary 撤回Agent的配置
+// @Description 撤回Agent的配置
+// @Tags Agent配置
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "认证密钥"
+// @Param config body model.AgentConfigDB true "Agent配置信息"
+// @Router /v1/revoke [post]
+func (*ServerApi) RevokeAgentConfig(c *gin.Context) {
+	//TODO 下面编写撤回配置的内容
+}
+
 // AddAgentConfig @Summary 添加Agent配置
 // @Description 新增Agent的配置信息
 // @Tags Agent配置
@@ -211,6 +223,7 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 	}
 	// 异新更新配置使用次数
 	err = services.AgentServiceImpV1App.UpdateAgentConfigTimes(c, config.ID)
+	err = services.AgentServiceImpV1App.UpdateAgentConfigStatus(c, config.ID, "生效中")
 	if Err(c, err, "update") {
 		return
 	}
@@ -284,6 +297,7 @@ func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
 	// 异步更新配置使用次数
 	go func() {
 		err = services.AgentServiceImpV1App.UpdateAgentConfigTimes(c, config.ID)
+		err = services.AgentServiceImpV1App.UpdateAgentConfigStatus(c, config.ID, "生效中")
 		if Err(c, err, "update") {
 			return
 		}

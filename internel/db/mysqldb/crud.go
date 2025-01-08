@@ -12,6 +12,11 @@ import (
 	"time"
 )
 
+func AgentconfigStatusChange(id int, s string) error {
+	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id", id).Update("status", s).Error
+	return err
+}
+
 func AgentconfigSelectByFail(key string) (int, error) {
 	var fnum int64
 	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).Where("action_detail = ?", "config update failed"+"["+key+"]").Count(&fnum).Error

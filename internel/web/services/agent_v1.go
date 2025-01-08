@@ -215,4 +215,13 @@ func (s *AgentServiceImpV1) DelAgentConfig(c *gin.Context) error {
 	return nil
 }
 
+func (s *AgentServiceImpV1) UpdateAgentConfigStatus(c *gin.Context, id int, status string) error {
+	err := dao.AgentconfigStatusChange(id, status)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		return err
+	}
+	return nil
+}
+
 var AgentServiceImpV1App = new(AgentServiceImpV1)

@@ -21,7 +21,7 @@
         <el-table-column prop="title" label="配置标题" min-width="120" />
         <el-table-column prop="status" label="状态" min-width="80">
           <template #default="{ row }">
-            <el-tag :type="row.status === '有效' ? 'success' : 'danger'">
+            <el-tag :type="row.status === '生效中' ? 'success' : 'warning'">
               {{ row.status }}
             </el-tag>
           </template>
@@ -54,6 +54,14 @@
               >
                 下发(ALL)
               </el-button>
+                            <el-button
+                              size="small"
+                              type="primary"
+                              :loading="loadingStates[row.id]"
+                              @click="handleDo(row)"
+                            >
+                              撤回
+                            </el-button>
               <el-button size="small" type="warning" @click="handleEdit(row)"> 编辑 </el-button>
               <el-button size="small" type="danger" @click="handleDel(row)"> 删除 </el-button>
             </el-space>
