@@ -231,6 +231,8 @@ const handleEdit = (row) => {
 
 // 添加表单处理函数
 const handleSubmit = () => {
+  dialogVisible_edit.value = false
+  dialogVisible_add.value = false
   ElMessage.success('提交成功')
   fetchTableData()
 }

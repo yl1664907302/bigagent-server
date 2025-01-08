@@ -353,7 +353,7 @@ func FindDeadAgents(t time.Time) ([]model.AgentInfo, error) {
 }
 
 func UpdateDeadAgents(t time.Time) error {
-	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Omit("updated_at").Update("active", 0).Error
+	err := conf.MysqlDataConnect.Model(&model.AgentInfo{}).Where("updated_at < ?", t).Omit("updated_at").Update("active", 0).Update("status", "部分数据推送异常").Error
 	return err
 }
 

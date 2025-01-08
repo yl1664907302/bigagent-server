@@ -16,7 +16,7 @@
     </el-form-item>
 
     <!-- 认证模式 -->
-    <el-form-item label="认证模式" prop="authMode">
+    <el-form-item label="认证模式" prop="auth_name">
       <el-select v-model="formData.auth_name" placeholder="请选择认证模式">
         <el-option label="token认证" value="token" />
       </el-select>
@@ -90,12 +90,13 @@ const rules = {
   ],
   auth_name: [{ required: true, message: '请选择认证模式', trigger: 'change' }],
   data_name: [{ required: true, message: '请选择数据名称', trigger: 'change' }],
-  solt_name: [
+  slot_name: [
     { required: true, message: '请选择槽位', trigger: 'change' },
     { message: '请输入数据接收方配置存放槽位' }
   ],
   token: [{ required: true, message: '请输入Token', trigger: 'blur' }],
-  ranges: [{ required: true, message: '请选择范围', trigger: 'change' }]
+  ranges: [{ required: true, message: '请选择范围', trigger: 'change' }],
+  collection_frequency: [{ required: true, message: '请选择上报与采集频次', trigger: 'change' }]
 }
 
 // 定义props接收父组件传值

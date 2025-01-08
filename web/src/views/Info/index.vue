@@ -52,8 +52,6 @@
                     <CaretBottom />
                   </el-icon>
                 </span>
-              </div>
-              <div class="footer-item">
                 <span class="green" v-if="agent_num.alive_num == agent_num.total_num">
                   100%
                   <el-icon>
@@ -95,9 +93,6 @@
                 </span>
               </div>
               <div class="footer-item">
-                <!-- <el-icon :size="14">
-                  <ArrowRight />
-                </el-icon> -->
               </div>
             </div>
           </div>
@@ -112,6 +107,7 @@
           批量下发
         </el-button>
         <el-button type="primary" @click="handleQuery"> 查询 </el-button>
+        <el-button type="primary" @click="handleEmpty"> 置空 </el-button>
         <el-select
           v-model="agent_option.type"
           placeholder="类型"
@@ -523,11 +519,26 @@ const isRowSelectable = (row: AgentInfo) => {
   return row.active === 1
 }
 
+// 置空
+const handleEmpty = () => {
+  agent_option.ip = ''
+  agent_option.uuid = ''
+  agent_option.platform = ''
+  agent_option.type = ''
+  agent_option.active = ''
+  agent_option.c_desc = ''
+  agent_option.c_desc2 = ''
+  agent_option.c_desc_f = ''
+  // 重置下拉框的禁用状态
+  isDisabled.value = false // 确保下拉框可以选择
+}
+
 // 修改 initSSE 函数
 const initSSE = () => {
   const controller = new AbortController()
   fetchEventSource(
-      import.meta.env.VITE_API_BASE_PATH+'/v1/info_sse?page=' +
+    import.meta.env.VITE_API_BASE_PATH +
+      '/v1/info_sse?page=' +
       pagination.currentPage +
       '&pageSize=' +
       pagination.pageSize +

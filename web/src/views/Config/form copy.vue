@@ -2,75 +2,70 @@
   <el-form :model="formData" :rules="rules" ref="formRef" label-width="120px" @submit.prevent>
     <!-- 标题 -->
     <el-form-item label="标题" prop="title">
-      <el-input v-model="formData.title" placeholder="请输入标题"/>
+      <el-input v-model="formData.title" placeholder="请输入标题" />
     </el-form-item>
 
     <!-- 备注 -->
     <el-form-item label="备注" prop="details">
-      <el-input type="textarea" v-model="formData.details" placeholder="请输入备注"/>
+      <el-input type="textarea" v-model="formData.details" placeholder="请输入备注" />
     </el-form-item>
 
-    <!-- 主机 -->
-    <el-form-item label="通信地址" prop="host">
-      <el-input v-model="formData.host" placeholder="请输入主机"/>
+    <el-form-item>
+      <el-row gutter="20">
+        <el-col :span="8">
+          <el-button
+            type="warning"
+            @click="addSubForm('stand1')"
+            :disabled="subForms.filter((subForm) => subForm.data_name === 'stand1').length >= 3"
+            style="width: 100%"
+            >新增标准类型1</el-button
+          >
+        </el-col>
+        <el-col :span="8">
+          <el-button
+            type="warning"
+            @click="addSubForm('stand2')"
+            :disabled="subForms.filter((subForm) => subForm.data_name === 'stand2').length >= 3"
+            style="width: 100%"
+            >新增标准类型2</el-button
+          >
+        </el-col>
+        <el-col :span="8">
+          <el-button
+            type="warning"
+            @click="addSubForm('stand3')"
+            :disabled="subForms.filter((subForm) => subForm.data_name === 'stand3').length >= 3"
+            style="width: 100%"
+            >新增标准类型3</el-button
+          >
+        </el-col>
+      </el-row>
+      <el-button type="danger" @click="removeSubForm" style="margin-top: 10px; width: 100%">
+        减少接收模块
+      </el-button>
     </el-form-item>
 
-    <!-- 认证模式 -->
-    <el-form-item label="认证模式" prop="auth_name">
-      <el-select v-model="formData.auth_name" placeholder="请选择认证模式">
-        <el-option label="token认证" value="token"/>
-      </el-select>
-    </el-form-item>
-
-    <!-- 数据名称 -->
-    <el-form-item label="数据名称" prop="data_name">
-      <el-select v-model="formData.data_name" placeholder="请输入数据名称">
-        <el-option label="标准数据类型1" value="stand1"/>
-        <!--        <el-option label="标准数据类型2" value="stand2"></el-option>-->
-        <!--        <el-option label="标准数据类型3" value="stand3"></el-option>-->
-      </el-select>
-    </el-form-item>
-
-    <!-- 槽位 -->
-    <el-form-item label="槽位名称" prop="slot_name">
-      <el-select v-model="formData.slot_name" placeholder="请输入数据名称">
-        <el-option label="槽位1" value="1"/>
-        <el-option label="槽位2" value="2"/>
-        <el-option label="槽位3" value="3"/>
-      </el-select>
-    </el-form-item>
-
-    <!-- Token (仅在token认证模式下显示) -->
-    <el-form-item v-if="formData.auth_name === 'token'" label="Token" prop="token">
-      <el-input v-model="formData.token" placeholder="请输入Token"/>
-    </el-form-item>
-
-    <el-form-item label="上报与采集频次" prop="collection_frequency">
-      <el-select v-model="formData.collection_frequency" placeholder="请输入频次">
-        <el-option label="每秒一次" value="1s" />
-        <el-option label="每秒二次" value="2s" />
-        <el-option label="每秒三次" value="3s" />
-      </el-select>
-    </el-form-item>
-    <!-- 范围 -->
-    <!--    <el-form-item label="范围" prop="ranges">-->
-    <!--      <el-select v-model="formData.ranges" placeholder="请选择范围">-->
-    <!--        <el-option label="全部范围" value="全部范围"></el-option>-->
-    <!--        <el-option label="部分范围" value="部分范围"></el-option>-->
-    <!--      </el-select>-->
-    <!--    </el-form-item>-->
+    <!-- 小表单列表 -->
+    <el-scrollbar style="max-height: 400px; overflow-y: auto">
+      <div v-for="(subForm, index) in subForms" :key="index" style="margin-bottom: 20px">
+        <SubFormCard :subForm="subForm" :prefix="'subForms.' + index" />
+      </div>
+    </el-scrollbar>
 
     <!-- 按钮 -->
     <el-form-item>
       <el-button type="primary" @click="onSubmit">提交</el-button>
+      <el-button @click="onReset">重置</el-button>
     </el-form-item>
   </el-form>
 </template>
 
 <script setup>
 import { ref, watch } from 'vue'
-import { editagentconf } from '@/api/login'
+import { addagentconf } from '@/api/login'
 import { ElMessage } from 'element-plus'
+import SubFormCard from '@/views/Config/SubFormCard.vue'
+import { ElScrollbar } from 'element-plus'
 
 // 表单验证规则
 const rules = {
@@ -109,17 +104,7 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'submit', 'reset'])
 
 // 创建表单数据的响应式副本
-const formData = ref({
-  id: props.modelValue.id,
-  title: props.modelValue.title || '',
-  details: props.modelValue.details || '',
-  host: props.modelValue.host || '',
-  auth_name: props.modelValue.auth_name || '',
-  data_name: props.modelValue.data_name || '',
-  slot_name: props.modelValue.slot_name || '',
-  token: props.modelValue.token || '',
-  collection_frequency: props.modelValue.collection_frequency || ''
-})
+const formData = ref({ ...props.modelValue })
 
 // 监听props变化,同步更新表单数据
 watch(
@@ -133,6 +118,35 @@ watch(
 // 表单ref
 const formRef = ref(null)
 
+// 存储小表单数据的数组
+const subForms = ref([])
+
+// 添加小表单的方法
+const addSubForm = (key) => {
+  const typeCount = subForms.value.filter((subForm) => subForm.data_name === key).length
+
+  if (typeCount < 3) {
+    subForms.value.push({
+      data_name: key,
+      auth_name: '',
+      token: '',
+      slot_name: typeCount + 1,
+      host: ''
+    })
+  } else {
+    ElMessage.warning(`${key} 类型最多只能添加三个`)
+  }
+}
+
+// 减少小表单的方法
+const removeSubForm = () => {
+  if (subForms.value.length > 0) {
+    subForms.value.pop()
+  } else {
+    ElMessage.warning('没有更多模块可以减少')
+  }
+}
+
 // 提交方法
 const onSubmit = async () => {
   if (!formRef.value) return
@@ -141,7 +155,7 @@ const onSubmit = async () => {
     await formRef.value.validate(async (valid) => {
       if (valid) {
         // 调用API发送数据
-        const res = await editagentconf(formData.value)
+        const res = await addagentconf(formData.value)
         if (res.code === 0) {
           // 成功提示
           ElMessage.success('提交成功')
