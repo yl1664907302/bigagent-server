@@ -29,7 +29,7 @@ func (s *AgentServiceImpV1) GetAgentConfigNEW2Fail(c *gin.Context) (int, int, er
 }
 
 func (s *AgentServiceImpV1) DeleteAgentInfo(c *gin.Context) error {
-	id := c.Param("uuid")
+	id := c.Query("uuid")
 	err := dao.AgentDelete(id)
 	if err != nil {
 		logger.DefaultLogger.Errorf(err.Error())

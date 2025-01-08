@@ -26,16 +26,7 @@ func AgentconfigNewID() (string, error) {
 
 func AgentDelete(uuid string) error {
 	// 先查询记录是否存在
-	var agent model.AgentInfo
-	result := conf.MysqlDataConnect.First(&agent, uuid)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return fmt.Errorf("agent不存在: %s", uuid)
-		}
-		return fmt.Errorf("查询记录失败: %v", result.Error)
-	}
-
-	err := conf.MysqlDataConnect.Delete(&agent).Error
+	err := conf.MysqlDataConnect.Where("uuid = ?", uuid).Delete(&model.AgentInfo{}).Error
 	return err
 }
 

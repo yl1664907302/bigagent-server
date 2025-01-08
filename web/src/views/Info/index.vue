@@ -389,8 +389,8 @@ const options1 = [
     label: '物理机'
   },
   {
-    value: 'virtual',
-    label: '虚拟机'
+    value: 'kvm',
+    label: 'kvm虚拟机'
   },
   {
     value: '',
@@ -655,6 +655,7 @@ const updateTableData = (rep) => {
 // 删除agent
 const deleteagent = async (row: AgentInfo) => {
   try {
+    sseController.value.abort()
     await ElMessageBox.confirm(
       h('div', null, [
         '确认删除agent "',
@@ -680,7 +681,6 @@ const deleteagent = async (row: AgentInfo) => {
       })
     }
   } finally {
-    sseController.value.abort() // 切换分页时中断连接
     sseController.value = initSSE()
   }
 }
