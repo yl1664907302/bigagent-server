@@ -112,7 +112,7 @@ func AgentInfoSelectByKeys(cp string, ps string, uuid string, ip string, t strin
 		query = query.Where("action_detail = ?", c)
 	}
 	if c_f != "" {
-		query = query.Where("action_detail = ?", "config update failed"+"["+c_f+"]")
+		query = query.Where("action_detail LIKE ?", "%failed["+c_f+"]%")
 	}
 	// 执行查询
 	err = query.Limit(pageSize).

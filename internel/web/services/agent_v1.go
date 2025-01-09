@@ -8,7 +8,6 @@ import (
 	"bigagent_server/internel/model"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -92,7 +91,6 @@ func (s *AgentServiceImpV1) GetAgentConfig2Nets(c *gin.Context) (*model.AgentCon
 		}
 		agentAddrs, _ = redisdb.ScanAgentAddresses(c)
 	}
-	log.Println(config)
 	return &config, agentAddrs, status, nil
 }
 
