@@ -19,7 +19,7 @@
       >
         <el-table-column prop="id" label="ID" min-width="60" />
         <el-table-column prop="title" label="配置标题" min-width="120" />
-        <el-table-column prop="status" label="状态" min-width="80">
+        <el-table-column prop="status" label="状态" min-width="100">
           <template #default="{ row }">
             <el-tag :type="row.status === '生效中' ? 'success' : 'warning'">
               {{ row.status }}
@@ -50,7 +50,7 @@
                 size="small"
                 type="primary"
                 :loading="loadingStates[row.id]"
-                @click="handleDo(row)"
+                @click="handleDo(row,0)"
               >
                 下发(ALL)
               </el-button>
@@ -58,7 +58,7 @@
                               size="small"
                               type="primary"
                               :loading="loadingStates[row.id]"
-                              @click="handleDo(row)"
+                              @click="handleDo(row,1)"
                             >
                               撤回
                             </el-button>
@@ -188,10 +188,11 @@ const fetchTableData = async () => {
 }
 
 // 下发配置
-const PushConfig = async (id) => {
+const PushConfig = async (id,revoke_id) => {
   try {
     const params = {
-      config_id: id
+      config_id: id,
+      revoke:revoke_id
     }
     const res = await pushagentconf(params)
     ElMessage.success(res.data)
@@ -249,7 +250,7 @@ const handleReset = () => {
   ElMessage.success('已重置')
 }
 
-const handleDo = async (row: TableItem) => {
+const handleDo = async (row: TableItem,revoke_id) => {
   try {
     await ElMessageBox.confirm(
       h('div', null, [
@@ -265,7 +266,7 @@ const handleDo = async (row: TableItem) => {
         type: 'warning'
       }
     )
-    await PushConfig(row.id)
+    await PushConfig(row.id,revoke_id)
   } catch (error) {
     // 用户取消或发生错误
     if (error !== 'cancel') {

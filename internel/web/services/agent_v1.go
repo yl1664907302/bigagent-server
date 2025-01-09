@@ -3,11 +3,12 @@ package services
 import (
 	conf "bigagent_server/internel/config"
 	dao "bigagent_server/internel/db/mysqldb"
-	"bigagent_server/internel/db/redis"
+	redisdb "bigagent_server/internel/db/redis"
 	"bigagent_server/internel/logger"
 	"bigagent_server/internel/model"
 	"github.com/gin-gonic/gin"
 	"github.com/goccy/go-json"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -46,42 +47,53 @@ func (s *AgentServiceImpV1) GetAgentNumDead2Live(c *gin.Context) (int, int, erro
 	return dnum, anum, err
 }
 
-func (s *AgentServiceImpV1) GetAgentConfig2Nets(c *gin.Context) (*model.AgentConfigDB, []string, error) {
+func (s *AgentServiceImpV1) GetAgentConfig2Nets(c *gin.Context) (*model.AgentConfigDB, []string, string, error) {
 	// 获取配置ID并查询配置
 	var requestdata map[string]int
+	var config model.AgentConfigDB
+	var agentAddrs []string
+	var status string
 	if body, err := c.GetRawData(); err != nil {
 		logger.DefaultLogger.Error(err)
-		return nil, nil, err
+		return nil, nil, status, err
 	} else if err = json.Unmarshal(body, &requestdata); err != nil {
 		logger.DefaultLogger.Error(err)
-		return nil, nil, err
+		return nil, nil, status, err
 	}
 
 	id := requestdata["config_id"]
-	config, err := dao.AgentconfigSelect(id)
+	revoke := requestdata["revoke"]
+	co, err := dao.AgentconfigSelect(id)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
-		return nil, nil, err
+		return nil, nil, status, err
 	}
 
+	// 撤销配置
+	if revoke == 1 {
+		switch co.AuthName {
+		case "token":
+			co.Token = ""
+			co.AuthName = ""
+		default:
+		}
+		co.Host = ""
+		status = "已撤回"
+	} else {
+		status = "生效中"
+	}
+	config = co
 	// 获取agent地址列表
-	agentAddrs, err := redisdb.ScanAgentAddresses(c)
+	agentAddrs, err = redisdb.ScanAgentAddresses(c)
 	if err != nil || len(agentAddrs) == 0 {
 		if err = dao.UpdateAgentAddressesToRedis(c); err != nil {
 			logger.DefaultLogger.Error(err)
-			return nil, nil, err
+			return nil, nil, status, err
 		}
 		agentAddrs, _ = redisdb.ScanAgentAddresses(c)
 	}
-	return &config, agentAddrs, nil
-}
-
-func (s *AgentServiceImpV1) UpdateAgentConfigTimes(c *gin.Context, id int) error {
-	err := dao.AgentconfigUpdateTimes(id)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-	}
-	return nil
+	log.Println(config)
+	return &config, agentAddrs, status, nil
 }
 
 func (s *AgentServiceImpV1) GetAgentConfig2Uuids(c *gin.Context) (*model.AgentConfigDB, []string, error) {
@@ -216,7 +228,8 @@ func (s *AgentServiceImpV1) DelAgentConfig(c *gin.Context) error {
 }
 
 func (s *AgentServiceImpV1) UpdateAgentConfigStatus(c *gin.Context, id int, status string) error {
-	err := dao.AgentconfigStatusChange(id, status)
+	err := dao.AgentconfigUpdateTimes(id)
+	err = dao.AgentconfigStatusChange(id, status)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 		return err

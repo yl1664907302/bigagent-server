@@ -181,8 +181,8 @@ func (*ServerApi) AddAgentConfig(c *gin.Context) {
 // @Param config_id body int true "配置ID"
 // @Router /v1/push [post]
 func (*ServerApi) PushAgentConfig(c *gin.Context) {
-	responses.ResponseApp.SuccssWithDetailed(c, "", "正在下发中，请查看agent状态")
-	config, agentAddrs, err := services.AgentServiceImpV1App.GetAgentConfig2Nets(c)
+	responses.ResponseApp.SuccssWithDetailed(c, "", "正在操作配置中，请查看agent状态")
+	config, agentAddrs, status, err := services.AgentServiceImpV1App.GetAgentConfig2Nets(c)
 	// 并发推送配置
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -217,13 +217,12 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 			}
 		case <-ctx.Done():
 			//特殊处理
-			responses.ResponseApp.FailWithAgent(c, "", "配置推送超时")
+			responses.ResponseApp.FailWithAgent(c, "", "配置操作超时")
 			return
 		}
 	}
-	// 异新更新配置使用次数
-	err = services.AgentServiceImpV1App.UpdateAgentConfigTimes(c, config.ID)
-	err = services.AgentServiceImpV1App.UpdateAgentConfigStatus(c, config.ID, "生效中")
+	// 异新更新配置状态
+	err = services.AgentServiceImpV1App.UpdateAgentConfigStatus(c, config.ID, status)
 	if Err(c, err, "update") {
 		return
 	}
@@ -294,9 +293,8 @@ func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
 		}
 	}
 
-	// 异步更新配置使用次数
+	// 异步更新配置状态
 	go func() {
-		err = services.AgentServiceImpV1App.UpdateAgentConfigTimes(c, config.ID)
 		err = services.AgentServiceImpV1App.UpdateAgentConfigStatus(c, config.ID, "生效中")
 		if Err(c, err, "update") {
 			return

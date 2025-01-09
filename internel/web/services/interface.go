@@ -15,10 +15,9 @@ type AgentService interface {
 	GetAgentNumDead2Live(c *gin.Context) (int, int, error)
 	SearchAgentNet(c *gin.Context) (string, error)
 	GetAgentConfigs2num(c *gin.Context) ([]model.AgentConfigDB, int, error)
-	GetAgentConfig2Nets(c *gin.Context) (*model.AgentConfigDB, []string, error)
+	GetAgentConfig2Nets(c *gin.Context) (*model.AgentConfigDB, []string, string, error)
 	GetAgentConfig2Uuids(c *gin.Context) (*model.AgentConfigDB, []string, error)
 	GetAgentRedict(c *gin.Context, host string, key string) (*http.Response, error)
-	UpdateAgentConfigTimes(c *gin.Context, id int) error
 	UpdateAgentConfigStatus(c *gin.Context, id int, status string) error
 	DeleteAgentInfo(c *gin.Context) error
 	GetAgentConfigNEW2Fail(c *gin.Context) (int, int, error)
