@@ -9,8 +9,78 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"strconv"
+	"strings"
 	"time"
 )
+
+func AgentconfigRangesUpdate(id int, keyword string) error {
+	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).
+		Where("id = ?", id).
+		Updates(map[string]interface{}{"ranges": keyword}).Error
+	return err
+}
+func AgentconfigRangesBool(id int) (bool, error) {
+	// 查询当前的 ranges 值
+	var agentConfig model.AgentConfigDB
+	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id = ?", id).First(&agentConfig).Error
+	if err != nil {
+		return false, err
+	}
+	if agentConfig.Ranges == "空" || agentConfig.Ranges == "全部" {
+		return false, nil
+	}
+	return true, nil
+}
+
+func AgentconfigRangesSelect(id int) ([]string, error) {
+	// 查询当前的 ranges 值
+	var agentConfig model.AgentConfigDB
+	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id = ?", id).First(&agentConfig).Error
+	return strings.Split(agentConfig.Ranges, ","), err
+}
+
+func AgentconfigRangesInsert(id int, uuids []string) error {
+	// 查询当前的 ranges 值
+	var agentConfig model.AgentConfigDB
+	if err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id = ?", id).First(&agentConfig).Error; err != nil {
+		return err
+	}
+
+	// 将当前的 ranges 字符串解析为切片
+	currentRanges := strings.Split(agentConfig.Ranges, ",")
+
+	// 去重逻辑：只追加不存在的 UUID
+	for _, uuid := range uuids {
+		// 检查当前 ranges 中是否已经存在该 UUID
+		exists := false
+		for _, existingUUID := range currentRanges {
+			if existingUUID == uuid {
+				exists = true
+				break
+			}
+		}
+
+		// 如果不存在，则追加
+		if !exists {
+			currentRanges = append(currentRanges, uuid)
+		}
+	}
+
+	// 将切片转换回以逗号分隔的字符串
+	updatedRangesStr := strings.Join(currentRanges, ",")
+
+	// 去掉开头的逗号（如果有）
+	updatedRangesStr = strings.TrimLeft(updatedRangesStr, ",")
+
+	// 更新数据库中的 ranges 字段
+	if err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).
+		Where("id = ?", id).
+		Update("ranges", updatedRangesStr).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func AgentconfigStatusChange(id int, s string) error {
 	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Where("id", id).Update("status", s).Error

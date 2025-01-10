@@ -28,9 +28,9 @@
         </el-table-column>
         <el-table-column prop="id" label="ID" width="60" />
         <el-table-column prop="title" label="配置标题" min-width="120" />
-        <el-table-column prop="status" label="状态" width="80">
+        <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === '有效' ? 'success' : 'danger'">
+            <el-tag :type="row.status === '生效中' ? 'success' : 'warning'">
               {{ row.status }}
             </el-tag>
           </template>

@@ -101,8 +101,9 @@ func (*Response) FailWithAgent(c *gin.Context, msg string, data any) {
 
 func (*Response) SuccssWithDetailed(c *gin.Context, msg string, data any) {
 	c.JSON(http.StatusOK, gin.H{
-		"code": 0,
-		"data": data,
+		"code":    0,
+		"message": msg,
+		"data":    data,
 	})
 }
 

@@ -4,6 +4,7 @@ import (
 	conf "bigagent_server/internel/config"
 	"bigagent_server/internel/db/redis"
 	"bigagent_server/internel/logger"
+	"bigagent_server/internel/model"
 	"bigagent_server/internel/web/grpcs/client"
 	"bigagent_server/internel/web/response"
 	"bigagent_server/internel/web/services"
@@ -181,8 +182,41 @@ func (*ServerApi) AddAgentConfig(c *gin.Context) {
 // @Param config_id body int true "配置ID"
 // @Router /v1/push [post]
 func (*ServerApi) PushAgentConfig(c *gin.Context) {
-	responses.ResponseApp.SuccssWithDetailed(c, "", "正在操作配置中，请查看agent状态")
-	config, agentAddrs, status, err := services.AgentServiceImpV1App.GetAgentConfig2Nets(c)
+	var agentAddrs []string
+	var status string
+	var config *model.AgentConfigDB
+	// 读取请求体并缓存
+	body, err := c.GetRawData()
+	if Err(c, err, "push") {
+		return
+	}
+	responses.ResponseApp.SuccssWithDetailed(c, "正在操作配置中，请查看agent状态", "正在操作配置中，请查看agent状态")
+
+	//判断配置文件是否存在指定范围
+	co, hosts, s, key, err := services.AgentServiceImpV1App.GetAgentConfig2Nets(c, body)
+	if key {
+		co2, uuids, s2, err2 := services.AgentServiceImpV1App.GetAgentConfig2Uuids(c, body, true)
+		if err2 != nil {
+			if Err(c, err2, "push") {
+				return
+			}
+		}
+		// 验证uuid是否有效，获取有效主机
+		validHosts := make([]string, 0)
+		for _, uuid := range uuids {
+			if exists, host := redisdb.CheckAgentExists(c, uuid); exists {
+				validHosts = append(validHosts, host)
+			}
+		}
+		agentAddrs = validHosts
+		status = s2
+		config = co2
+	} else {
+		config = co
+		agentAddrs = hosts
+		status = s
+	}
+
 	// 并发推送配置
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
@@ -213,7 +247,9 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 		select {
 		case err = <-results:
 			if err != nil {
-				logger.DefaultLogger.Error(err)
+				if Err(c, err, "push") {
+					return
+				}
 			}
 		case <-ctx.Done():
 			//特殊处理
@@ -221,7 +257,6 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 			return
 		}
 	}
-	// 异新更新配置状态
 	err = services.AgentServiceImpV1App.UpdateAgentConfigStatus(c, config.ID, status)
 	if Err(c, err, "update") {
 		return
@@ -236,11 +271,16 @@ func (*ServerApi) PushAgentConfig(c *gin.Context) {
 // @Param Authorization header string true "认证密钥"
 // @Router /v1/push_host [post]
 func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
-	config, uuids, err := services.AgentServiceImpV1App.GetAgentConfig2Uuids(c)
+	// 读取请求体并缓存
+	body, err := c.GetRawData()
 	if Err(c, err, "push") {
 		return
 	}
-	// 验证uuid是否有效
+	config, uuids, status, err := services.AgentServiceImpV1App.GetAgentConfig2Uuids(c, body, false)
+	if Err(c, err, "push") {
+		return
+	}
+	// 验证uuid是否有效，获取有效主机
 	validHosts := make([]string, 0)
 	for _, uuid := range uuids {
 		if exists, host := redisdb.CheckAgentExists(c, uuid); exists {
@@ -282,7 +322,7 @@ func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
 	// 收集结果
 	for i := 0; i < len(validHosts); i++ {
 		select {
-		case err = <-results:
+		case err := <-results:
 			if err != nil {
 				logger.DefaultLogger.Error(err)
 			}
@@ -295,7 +335,7 @@ func (*ServerApi) PushAgentConfigByHost(c *gin.Context) {
 
 	// 异步更新配置状态
 	go func() {
-		err = services.AgentServiceImpV1App.UpdateAgentConfigStatus(c, config.ID, "生效中")
+		err := services.AgentServiceImpV1App.UpdateAgentConfigStatus(c, config.ID, status)
 		if Err(c, err, "update") {
 			return
 		}

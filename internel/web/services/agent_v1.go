@@ -46,26 +46,28 @@ func (s *AgentServiceImpV1) GetAgentNumDead2Live(c *gin.Context) (int, int, erro
 	return dnum, anum, err
 }
 
-func (s *AgentServiceImpV1) GetAgentConfig2Nets(c *gin.Context) (*model.AgentConfigDB, []string, string, error) {
+func (s *AgentServiceImpV1) GetAgentConfig2Nets(c *gin.Context, body []byte) (*model.AgentConfigDB, []string, string, bool, error) {
 	// 获取配置ID并查询配置
 	var requestdata map[string]int
 	var config model.AgentConfigDB
 	var agentAddrs []string
 	var status string
-	if body, err := c.GetRawData(); err != nil {
-		logger.DefaultLogger.Error(err)
-		return nil, nil, status, err
-	} else if err = json.Unmarshal(body, &requestdata); err != nil {
-		logger.DefaultLogger.Error(err)
-		return nil, nil, status, err
-	}
 
+	err := json.Unmarshal(body, &requestdata)
+	if err != nil {
+		logger.DefaultLogger.Error(err)
+		return nil, nil, status, false, err
+	}
 	id := requestdata["config_id"]
 	revoke := requestdata["revoke"]
+	key, err := dao.AgentconfigRangesBool(id)
+	if key {
+		return nil, nil, "", true, nil
+	}
 	co, err := dao.AgentconfigSelect(id)
 	if err != nil {
 		logger.DefaultLogger.Error(err)
-		return nil, nil, status, err
+		return nil, nil, status, false, err
 	}
 
 	// 撤销配置
@@ -78,8 +80,16 @@ func (s *AgentServiceImpV1) GetAgentConfig2Nets(c *gin.Context) (*model.AgentCon
 		}
 		co.Host = ""
 		status = "已撤回"
+		err := dao.AgentconfigRangesUpdate(id, "空")
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+		}
 	} else {
 		status = "生效中"
+		err := dao.AgentconfigRangesUpdate(id, "全部")
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+		}
 	}
 	config = co
 	// 获取agent地址列表
@@ -87,31 +97,68 @@ func (s *AgentServiceImpV1) GetAgentConfig2Nets(c *gin.Context) (*model.AgentCon
 	if err != nil || len(agentAddrs) == 0 {
 		if err = dao.UpdateAgentAddressesToRedis(c); err != nil {
 			logger.DefaultLogger.Error(err)
-			return nil, nil, status, err
+			return nil, nil, status, false, err
 		}
 		agentAddrs, _ = redisdb.ScanAgentAddresses(c)
 	}
-	return &config, agentAddrs, status, nil
+	return &config, agentAddrs, status, false, nil
 }
 
-func (s *AgentServiceImpV1) GetAgentConfig2Uuids(c *gin.Context) (*model.AgentConfigDB, []string, error) {
+func (s *AgentServiceImpV1) GetAgentConfig2Uuids(c *gin.Context, body []byte, key bool) (*model.AgentConfigDB, []string, string, error) {
 	var requestData struct {
 		ConfigID int      `json:"config_id"`
-		Uuids    []string `json:"uuids"` // 主机IP列表
+		Uuids    []string `json:"uuids"`
 	}
-	if body, err := c.GetRawData(); err != nil {
-		logger.DefaultLogger.Error(err)
-		return nil, nil, err
-	} else if err = json.Unmarshal(body, &requestData); err != nil {
-		logger.DefaultLogger.Error(err)
-		return nil, nil, err
+	var requestData_Revoke struct {
+		ConfigID int `json:"config_id"`
+		Revoke   int `json:"revoke"`
 	}
-	config, err := dao.AgentconfigSelect(requestData.ConfigID)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		return nil, nil, err
+	var config model.AgentConfigDB
+	var status string
+	if key {
+		err := json.Unmarshal(body, &requestData_Revoke)
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+			return nil, nil, "", err
+		}
+		co, err := dao.AgentconfigSelect(requestData_Revoke.ConfigID)
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+			return nil, nil, status, err
+		}
+		// 撤销配置,从数据库中查询uuid数组
+		switch co.AuthName {
+		case "token":
+			co.Token = ""
+			co.AuthName = ""
+		default:
+		}
+		co.Host = ""
+		status = "已撤回"
+		rangesSelect, err := dao.AgentconfigRangesSelect(requestData_Revoke.ConfigID)
+		err = dao.AgentconfigRangesUpdate(requestData_Revoke.ConfigID, "空")
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+			return nil, nil, "撤回异常", err
+		}
+		config = co
+		return &config, rangesSelect, status, err
+	} else {
+		err := json.Unmarshal(body, &requestData)
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+			return nil, nil, "", err
+		}
+		co, err := dao.AgentconfigSelect(requestData.ConfigID)
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+			return nil, nil, status, err
+		}
+		status = "生效中"
+		config = co
+		err = dao.AgentconfigRangesInsert(requestData.ConfigID, requestData.Uuids)
+		return &config, requestData.Uuids, status, err
 	}
-	return &config, requestData.Uuids, nil
 }
 
 func (s *AgentServiceImpV1) GetAgentConfigs2num(c *gin.Context) ([]model.AgentConfigDB, int, error) {
@@ -188,6 +235,7 @@ func (s *AgentServiceImpV1) AddAgentConfig(c *gin.Context) error {
 		return err
 	}
 	configDB.Status = "有效"
+	configDB.Ranges = "空"
 	err = dao.AgentconfigCreate(configDB)
 	if err != nil {
 		logger.DefaultLogger.Error(err)

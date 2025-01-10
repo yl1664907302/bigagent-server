@@ -43,27 +43,39 @@
             {{ formatDate(row.created_at) }}
           </template>
         </el-table-column>
-        <el-table-column label="操作" min-width="180" fixed="right">
+        <el-table-column label="操作" min-width="250" fixed="right">
           <template #default="{ row }">
             <el-space>
-              <el-button
-                size="small"
-                type="primary"
-                :loading="loadingStates[row.id]"
-                @click="handleDo(row,0)"
-              >
-                下发(ALL)
-              </el-button>
-                            <el-button
-                              size="small"
-                              type="primary"
-                              :loading="loadingStates[row.id]"
-                              @click="handleDo(row,1)"
-                            >
-                              撤回
-                            </el-button>
-              <el-button size="small" type="warning" @click="handleEdit(row)"> 编辑 </el-button>
-              <el-button size="small" type="danger" @click="handleDel(row)"> 删除 </el-button>
+              <div style="display: flex; gap: 2px; overflow: hidden;">
+                <el-button
+                  size="small"
+                  type="primary"
+                  :loading="loadingStates[row.id]"
+                  @click="handleDo(row, 0)"
+                >
+                  下发
+                </el-button>
+                <el-button
+                  size="small"
+                  type="primary"
+                  :loading="loadingStates[row.id]"
+                  @click="handleDo(row, 1)"
+                >
+                  撤回
+                </el-button>
+                <el-button
+                  size="small"
+                  type="warning"
+                  @click="
+                    row.status === '生效中'
+                      ? ElMessage.warning('请先撤回后才能编辑')
+                      : handleEdit(row)
+                  "
+                >
+                  编辑
+                </el-button>
+                <el-button size="small" type="danger" @click="handleDel(row)"> 删除 </el-button>
+              </div>
             </el-space>
           </template>
         </el-table-column>
@@ -188,11 +200,11 @@ const fetchTableData = async () => {
 }
 
 // 下发配置
-const PushConfig = async (id,revoke_id) => {
+const PushConfig = async (id, revoke_id) => {
   try {
     const params = {
       config_id: id,
-      revoke:revoke_id
+      revoke: revoke_id
     }
     const res = await pushagentconf(params)
     ElMessage.success(res.data)
@@ -250,23 +262,22 @@ const handleReset = () => {
   ElMessage.success('已重置')
 }
 
-const handleDo = async (row: TableItem,revoke_id) => {
+const handleDo = async (row: TableItem, revoke_id) => {
   try {
+    const message = revoke_id
+      ? '确认撤回配置 "' + row.title + '" 吗？'
+      : '确认下发配置 "' + row.title + '" 吗？'
+    const message2 = revoke_id ? '范围内指定配置会清空！' : '范围是所有主机！'
     await ElMessageBox.confirm(
-      h('div', null, [
-        '确认下发配置 "',
-        row.title,
-        '" 吗？',
-        h('span', { style: { color: 'red' } }, '范围是所有主机！')
-      ]),
+      h('div', null, [message, h('span', { style: { color: 'red' } }, message2)]),
       {
-        title: '下发确认',
+        title: '操作确认',
         confirmButtonText: '确认',
         cancelButtonText: '取消',
         type: 'warning'
       }
     )
-    await PushConfig(row.id,revoke_id)
+    await PushConfig(row.id, revoke_id)
   } catch (error) {
     // 用户取消或发生错误
     if (error !== 'cancel') {
@@ -402,5 +413,10 @@ onMounted(() => {
 
 :deep(.el-table th.el-table__cell) {
   padding: 8px 0;
+}
+.el-button.is-disabled {
+  background-color: #d3d3d3; /* 自定义禁用背景色 */
+  color: #a9a9a9; /* 自定义禁用文字颜色 */
+  border-color: #d3d3d3; /* 自定义禁用边框颜色 */
 }
 </style>
