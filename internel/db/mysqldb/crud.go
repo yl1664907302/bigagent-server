@@ -251,7 +251,7 @@ func AgentconfigId() (int, error) {
 	return maxId, err
 }
 
-func AgentconfigSelectAll(cp string, ps string) ([]model.AgentConfigDB, error) {
+func AgentconfigSelectAll(cp string, ps string, status string) ([]model.AgentConfigDB, error) {
 	var agentconfigs []model.AgentConfigDB
 
 	// 将字符串参数转换为整数
@@ -268,9 +268,17 @@ func AgentconfigSelectAll(cp string, ps string) ([]model.AgentConfigDB, error) {
 	// 计算偏移量
 	offset := (currentPage - 1) * pageSize
 
+	// 构建查询
+	query := conf.MysqlDataConnect.
+		Where("deleted_at IS NULL") // 始终添加 deleted_at 条件
+
+	// 如果 status 不为空，添加 status 筛选条件
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
 	// 使用 Limit 和 Offset 进行分页查询
-	err = conf.MysqlDataConnect.
-		Where("deleted_at IS NULL").
+	err = query.
 		Limit(pageSize).
 		Offset(offset).
 		Find(&agentconfigs).Error
@@ -365,9 +373,17 @@ func UpdateAgentAddressesToRedis(c context.Context) error {
 	}
 }
 
-func AgentconfigNetNum() (int, error) {
+func AgentconfigNetNum(status string) (int, error) {
 	var num int64
-	err := conf.MysqlDataConnect.Model(&model.AgentConfigDB{}).Count(&num).Error
+	query := conf.MysqlDataConnect.Model(&model.AgentConfigDB{})
+
+	// 如果 status 不为空，添加 WHERE 条件
+	if status != "" {
+		query = query.Where("status = ?", status)
+	}
+
+	// 统计记录数量
+	err := query.Count(&num).Error
 	return int(num), err
 }
 

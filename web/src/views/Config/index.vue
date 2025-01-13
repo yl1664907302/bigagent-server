@@ -4,6 +4,16 @@
       <!-- 操作按钮区域 -->
       <div class="operation-area">
         <el-button type="primary" @click="handleAdd" :icon="Plus"> 新增配置 </el-button>
+        <el-select
+          v-model="selectedStatus"
+          placeholder="选择状态"
+          @change="fetchTableData"
+          style="width: 120px"
+        >
+          <el-option label="有效" value="有效" />
+          <el-option label="生效中" value="生效中" />
+          <el-option label="已撤回" value="已撤回" />
+        </el-select>
       </div>
 
       <!-- 表格区域 -->
@@ -46,7 +56,7 @@
         <el-table-column label="操作" min-width="250" fixed="right">
           <template #default="{ row }">
             <el-space>
-              <div style="display: flex; gap: 2px; overflow: hidden;">
+              <div style="display: flex; gap: 2px; overflow: hidden">
                 <el-button
                   size="small"
                   type="primary"
@@ -183,7 +193,8 @@ const fetchTableData = async () => {
     tableLoading.value = true
     const params = {
       page: pagination.currentPage,
-      pageSize: pagination.pageSize
+      pageSize: pagination.pageSize,
+      status: selectedStatus.value
     }
     const res = await getagentconf(params)
     tableData.value = res.data.configs
@@ -341,6 +352,8 @@ const cellStyle = {
   padding: '8px'
 }
 
+const selectedStatus = ref<string | null>(null)
+
 onMounted(() => {
   fetchTableData()
 })
@@ -359,8 +372,9 @@ onMounted(() => {
 .operation-area {
   margin-bottom: 15px;
   display: flex;
-  gap: 10px;
+  gap: 30px;
   padding: 0 5px;
+  align-items: center;
 }
 
 .pagination-area {
@@ -418,5 +432,11 @@ onMounted(() => {
   background-color: #d3d3d3; /* 自定义禁用背景色 */
   color: #a9a9a9; /* 自定义禁用文字颜色 */
   border-color: #d3d3d3; /* 自定义禁用边框颜色 */
+}
+
+.search-area {
+  margin-bottom: 15px;
+  display: flex;
+  gap: 10px;
 }
 </style>

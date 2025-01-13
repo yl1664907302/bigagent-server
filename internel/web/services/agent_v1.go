@@ -162,23 +162,34 @@ func (s *AgentServiceImpV1) GetAgentConfig2Uuids(c *gin.Context, body []byte, ke
 }
 
 func (s *AgentServiceImpV1) GetAgentConfigs2num(c *gin.Context) ([]model.AgentConfigDB, int, error) {
-	configs, err := dao.AgentconfigSelectAll(c.Query("page"), c.Query("pageSize"))
+	configs, err := dao.AgentconfigSelectAll(c.Query("page"), c.Query("pageSize"), c.Query("status"))
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
-	num, err := dao.AgentconfigNetNum()
+	num, err := dao.AgentconfigNetNum(c.Query("status"))
 	if err != nil {
 		logger.DefaultLogger.Error(err)
 	}
 	return configs, num, nil
 }
 
-func (s *AgentServiceImpV1) GetAgentRedict(c *gin.Context, host string, key string) (*http.Response, error) {
+func (s *AgentServiceImpV1) GetAgentRedictShow(c *gin.Context, host string, key string, action bool) (*http.Response, error) {
 	client := &http.Client{}
-	req, err := http.NewRequest(c.Request.Method, "http://"+host+"/"+c.Query("model_name")+"/"+key, c.Request.Body)
-	if err != nil {
-		logger.DefaultLogger.Error(err)
-		return nil, err
+	var req *http.Request
+	if action {
+		rq, err := http.NewRequest(c.Request.Method, "http://"+host+"/"+c.Query("model_name")+"/"+key, c.Request.Body)
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+			return nil, err
+		}
+		req = rq
+	} else {
+		rq, err := http.NewRequest(http.MethodPost, "http://"+host+"/"+key, c.Request.Body)
+		if err != nil {
+			logger.DefaultLogger.Error(err)
+			return nil, err
+		}
+		req = rq
 	}
 	for key, values := range c.Request.Header {
 		for _, value := range values {
@@ -190,7 +201,7 @@ func (s *AgentServiceImpV1) GetAgentRedict(c *gin.Context, host string, key stri
 	// 此处密钥配置会在前端编写完后替换，改为从server的uri获取
 	//req.Header.Add("Authorization", c.Request.Header.Get("Authorization"))
 	resp, err := client.Do(req)
-	return resp, nil
+	return resp, err
 }
 
 func (s *AgentServiceImpV1) SearchAgentNet(c *gin.Context) (string, error) {
