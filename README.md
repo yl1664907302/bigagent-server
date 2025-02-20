@@ -78,11 +78,11 @@ collection_frequency: 2s
 
 ## Run
 ```shell
-nohup ./bigagent -s start > /dev/null 2>&1  &
+./bigagent  -d -s start
 ```
 
 ```shell
-nohup ./bigagent -c /path/config.yml > /dev/null 2>&1  &
+./bigagent -s start -c /path/config.yml
 ```
 
 # server端
@@ -154,35 +154,35 @@ Dockerfile
 # 使用官方的 Golang 镜像作为基础镜像
 FROM golang:1.23
 
-# 设置工作目录
+  # 设置工作目录
 WORKDIR /app
 
-# 设置 GOPROXY 为国内的代理，加速依赖下载
+  # 设置 GOPROXY 为国内的代理，加速依赖下载
 RUN go env -w GOPROXY=https://goproxy.cn,direct
 
-# 复制 go.mod 和 go.sum 文件
+  # 复制 go.mod 和 go.sum 文件
 COPY go.mod go.sum ./
 
-# 下载依赖
+  # 下载依赖
 RUN go mod download
 
-# 复制整个项目代码
+  # 复制整个项目代码
 COPY cmd /app/cmd
 COPY docs /app/docs
 COPY inits /app/inits
 COPY internel /app/internel
 COPY config.yml /app/config.yml
 
-# 构建 Go 应用程序
+  # 构建 Go 应用程序
 RUN go build -o bigagnt-server cmd/server/main.go
 
-# 安装必要的工具和依赖
+  # 安装必要的工具和依赖
 RUN apt-get update && apt-get install -y ca-certificates tzdata
 
-# 设置时区
+  # 设置时区
 ENV TZ=Asia/Shanghai
 EXPOSE 8080
-# 设置容器启动时执行的命令
+  # 设置容器启动时执行的命令
 CMD ["./bigagnt-server"]
 ```
 
@@ -192,12 +192,12 @@ docker build  -t bigagent-server .
 
 ```yaml
 docker run -d \
-  --name bigagentserver \
-  -p 8080:8080 \
-  -p 5678:5678 \
-  -p 8765:8765 \
-  -v conf:/app/conf/ \
-  bigagent-server
+--name bigagentserver \
+-p 8080:8080 \
+-p 5678:5678 \
+-p 8765:8765 \
+-v conf:/app/conf/ \
+bigagent-server
 ```
 
 # web端
@@ -310,7 +310,7 @@ docker  build -t bigagent-server-web .
 docker run -d --name bigagent-web -p 3000:3000 bigagent-server-web
 ```
 
-访问 
+访问
 
 ```http
 http://localhost:3000/agent/
